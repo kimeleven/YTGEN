@@ -1,0 +1,22 @@
+# 시크릿 파일 (절대 커밋 금지)
+.env
+client_secret.json
+data/token.json
+
+# 생성된 영상 / 임시 파일 (용량 큼)
+output/
+temp/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# IDE
+.vscode/
+.idea/
+
+# DB는 커밋하지 않음 (GitHub Actions 캐시로 관리)
+data/ytgen.db

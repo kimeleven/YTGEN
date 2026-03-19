@@ -1,0 +1,40 @@
+# ─────────────────────────────────────────
+# YouTube Shorts 자동 생성 설정
+# ─────────────────────────────────────────
+
+# ── 스케줄 설정 ──────────────────────────
+schedule:
+  interval_hours: 1      # 몇 시간 간격으로 1개 생성 (1 = 시간당 1개)
+  start_time: "09:00"    # 첫 실행 시각 (HH:MM)
+
+# ── 영상 설정 ────────────────────────────
+video:
+  resolution: [1080, 1920]   # 너비 x 높이 (9:16 숏츠 비율)
+  fps: 30
+  target_duration: 50        # 목표 영상 길이 (초)
+
+# ── 자막 설정 ────────────────────────────
+subtitle:
+  font_path: "C:/Windows/Fonts/malgunbd.ttf"  # 맑은 고딕 Bold
+  font_size: 55
+  color: [255, 255, 255]       # 흰색
+  stroke_color: [0, 0, 0]      # 검정 테두리
+  stroke_width: 3
+  box_opacity: 160             # 자막 배경 박스 투명도 (0~255)
+  padding_bottom: 120          # 화면 하단 여백 (px)
+
+# ── BGM 설정 ─────────────────────────────
+bgm:
+  enabled: true
+  volume: 0.12        # 배경음악 볼륨 (0.0~1.0)
+  path: "temp/bgm.wav"
+
+# ── TTS 설정 ─────────────────────────────
+tts:
+  voice: "ko-KR-SunHiNeural"   # 밝고 발랄한 여성 목소리
+  # 다른 선택지: ko-KR-YuJinNeural (더 젊은 느낌)
+  speed: "+25%"                 # 속도 (+%: 빠름, -%: 느림)
+
+# ── 저장 경로 ────────────────────────────
+output_dir: "output"
+temp_dir: "temp"
