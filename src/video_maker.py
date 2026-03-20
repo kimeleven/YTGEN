@@ -141,6 +141,47 @@ def _draw_subtitle(
     return img
 
 
+def _draw_watermark(img: Image.Image, font_path: str) -> Image.Image:
+    """상단 좌측에 구독 유도 워터마크를 베이크인한다."""
+    img = img.copy()
+    text = "AI로 제작된 최신AI뉴스 구독"
+    font_size = 32
+    font = _load_font(font_path, font_size)
+    draw = ImageDraw.Draw(img)
+
+    padding_x, padding_y = 24, 40
+    bbox = draw.textbbox((0, 0), text, font=font)
+    text_w = bbox[2] - bbox[0]
+    text_h = bbox[3] - bbox[1]
+
+    # 반투명 배경 박스
+    box_margin = 10
+    overlay = Image.new("RGBA", img.size, (0, 0, 0, 0))
+    ov_draw = ImageDraw.Draw(overlay)
+    ov_draw.rounded_rectangle(
+        [
+            (padding_x - box_margin, padding_y - box_margin),
+            (padding_x + text_w + box_margin, padding_y + text_h + box_margin),
+        ],
+        radius=10,
+        fill=(0, 0, 0, 140),
+    )
+    img = img.convert("RGBA")
+    img = Image.alpha_composite(img, overlay).convert("RGB")
+    draw = ImageDraw.Draw(img)
+
+    # stroke + 본문
+    stroke_w = 2
+    for dx in [-stroke_w, 0, stroke_w]:
+        for dy in [-stroke_w, 0, stroke_w]:
+            if dx == 0 and dy == 0:
+                continue
+            draw.text((padding_x + dx, padding_y + dy), text, font=font, fill=(0, 0, 0))
+    draw.text((padding_x, padding_y), text, font=font, fill=(255, 255, 255))
+
+    return img
+
+
 # ── 영상 제작 ──────────────────────────────────────────────────────────────────
 
 def make_video(
@@ -175,6 +216,12 @@ def make_video(
             stroke_width=subtitle_cfg.get("stroke_width", 3),
             box_opacity=subtitle_cfg.get("box_opacity", 160),
             padding_bottom=subtitle_cfg.get("padding_bottom", 120),
+        )
+
+        # 워터마크 베이크인
+        frame = _draw_watermark(
+            frame,
+            font_path=subtitle_cfg.get("font_path", "C:/Windows/Fonts/malgunbd.ttf"),
         )
 
         frame_arr = np.array(frame)

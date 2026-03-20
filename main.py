@@ -121,10 +121,17 @@ def cmd_schedule(cfg: dict):
     from src.db import save_posted
 
     schedule_cfg   = cfg.get("schedule", {})
-    interval_hours = schedule_cfg.get("interval_hours", 1)
+    interval_hours = schedule_cfg.get("interval_hours", 6)
+    daily_limit    = schedule_cfg.get("daily_limit", 4)
     start_time     = schedule_cfg.get("start_time", "09:00")
 
     def pipeline():
+        from src.db import get_stats
+        today_count = get_stats()["today"]
+        if today_count >= daily_limit:
+            print(f"[scheduler] 오늘 이미 {today_count}개 생성 완료 (한도: {daily_limit}개), 내일 재개")
+            return
+
         news_list = fetch_news(max_count=1, skip_processed=True)
         if not news_list:
             print("[scheduler] 새로운 뉴스 없음, 다음 실행 대기 중...")
@@ -133,6 +140,7 @@ def cmd_schedule(cfg: dict):
         try:
             path = run_single_video(cfg, news)
             save_posted(news, path)
+            print(f"[scheduler] 오늘 {today_count + 1}/{daily_limit}개 완료")
         except Exception as e:
             print(f"[scheduler] 영상 생성 실패: {e}")
 
