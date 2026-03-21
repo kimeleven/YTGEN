@@ -11,6 +11,7 @@ import edge_tts
 # ── 언어별 기본 목소리 ────────────────────────────────────────────────────────
 DEFAULT_VOICES = {
     "ko": "ko-KR-SunHiNeural",    # 한국어 여성 (밝고 발랄)
+    "en": "en-US-JennyNeural",    # 영어 여성 (자연스러운 미국식)
     "ja": "ja-JP-NanamiNeural",   # 일본어 여성 (자연스러운)
     "zh": "zh-CN-XiaoxiaoNeural", # 중국어 여성 (명료한)
 }

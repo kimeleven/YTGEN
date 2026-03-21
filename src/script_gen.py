@@ -21,6 +21,15 @@ _LANG_CONFIG = {
         "closing": "구독과 알림 설정으로 AI 뉴스를 가장 빠르게 받아보세요.",
         "char_rule": "한글, 숫자, 마침표, 쉼표만 사용 (이모지·특수문자 절대 금지)",
     },
+    "en": {
+        "instruction": "Write a YouTube Shorts script in English.",
+        "narration_hint": "Narration text (English, 50-80 words, no emoji, fact-based)",
+        "title_hint": "Video title (under 60 chars, includes key info, no emoji)",
+        "desc_hint": "Video description (under 150 chars, summary + hashtags)",
+        "tags_hint": '["AI", "ArtificialIntelligence", "tag3", "tag4", "tag5"]',
+        "closing": "Subscribe and hit the bell to get the latest AI news first.",
+        "char_rule": "Use only English letters, numbers, and punctuation (no emoji or special characters)",
+    },
     "ja": {
         "instruction": "日本語でYouTube Shortsの台本を作成してください。",
         "narration_hint": "ナレーションテキスト（日本語、50〜80文字、絵文字なし、事実中心）",

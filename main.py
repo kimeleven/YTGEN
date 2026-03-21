@@ -104,13 +104,14 @@ def run_single_video(cfg: dict, news_item: dict, lang_cfg: dict) -> str:
         font_path=font_path,
     )
 
-    # 4. 전체 SNS 업로드
+    # 4. 전체 SNS 업로드 (YouTube는 언어·지역 제한 적용)
     upload_all(
         video_path=output_path,
         title=script["title"],
         description=script["description"],
         tags=script["tags"],
         cfg=cfg,
+        lang_cfg=lang_cfg,
     )
 
     return output_path

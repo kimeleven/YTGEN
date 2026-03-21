@@ -56,9 +56,15 @@ def upload_to_youtube(
     title: str,
     description: str,
     tags: list[str],
+    default_language: str = "ko",
+    region_codes: list[str] | None = None,
 ) -> str:
     """
     YouTube Shorts에 영상을 업로드한다.
+
+    Args:
+        default_language: 영상 언어 코드 ("ko", "en", "ja", "zh" 등)
+        region_codes: 노출 허용 국가 코드 리스트 (None이면 전 세계)
 
     Returns:
         업로드된 영상의 YouTube URL
@@ -68,19 +74,21 @@ def upload_to_youtube(
         return f"local://{os.path.abspath(video_path)}"
 
     print(f"[uploader] 업로드 시작: {os.path.basename(video_path)}")
+    if region_codes:
+        print(f"[uploader] 지역 제한: {', '.join(region_codes)}")
 
     try:
         creds = _get_credentials()
         youtube = build("youtube", "v3", credentials=creds)
 
-        shorts_description = f"{description}\n\n#Shorts #AI #인공지능"
+        shorts_description = f"{description}\n\n#Shorts #AI"
         body = {
             "snippet": {
                 "title": title[:100],
                 "description": shorts_description[:5000],
                 "tags": tags,
                 "categoryId": "28",
-                "defaultLanguage": "ko",
+                "defaultLanguage": default_language,
             },
             "status": {
                 "privacyStatus": "public",
@@ -88,6 +96,16 @@ def upload_to_youtube(
                 "containsSyntheticMedia": True,
             },
         }
+
+        # 지역 제한 설정
+        if region_codes:
+            body["contentDetails"] = {
+                "regionRestriction": {
+                    "allowed": region_codes,
+                }
+            }
+
+        parts = "snippet,status,contentDetails" if region_codes else "snippet,status"
 
         media = MediaFileUpload(
             video_path,
@@ -97,7 +115,7 @@ def upload_to_youtube(
         )
 
         request = youtube.videos().insert(
-            part="snippet,status",
+            part=parts,
             body=body,
             media_body=media,
         )
@@ -132,6 +150,7 @@ def upload_all(
     description: str,
     tags: list[str],
     cfg: dict,
+    lang_cfg: dict | None = None,
 ) -> dict:
     """
     활성화된 모든 SNS 플랫폼에 영상을 업로드한다.
@@ -142,6 +161,7 @@ def upload_all(
         description: 영상 설명
         tags: 해시태그 리스트
         cfg: config.yaml 전체 dict
+        lang_cfg: languages 항목 1개 (언어 코드·지역 코드 포함)
 
     Returns:
         {"youtube": url, "instagram": url, ...} 형태의 결과 dict
@@ -149,11 +169,17 @@ def upload_all(
     """
     results = {}
     sns_cfg = cfg.get("sns", {})
-    caption = f"{title}\n\n{' '.join('#' + t for t in tags)}\n#AI #인공지능 #Shorts"
+    lang_code = (lang_cfg or {}).get("code", "ko")
+    region_codes = (lang_cfg or {}).get("youtube_regions")
+    caption = f"{title}\n\n{' '.join('#' + t for t in tags)}\n#AI #Shorts"
 
     # YouTube (항상 시도)
     print("\n[upload_all] YouTube 업로드 중...")
-    results["youtube"] = upload_to_youtube(video_path, title, description, tags)
+    results["youtube"] = upload_to_youtube(
+        video_path, title, description, tags,
+        default_language=lang_code,
+        region_codes=region_codes,
+    )
 
     # Instagram Reels
     if sns_cfg.get("instagram", {}).get("enabled"):
