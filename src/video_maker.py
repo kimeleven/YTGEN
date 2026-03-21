@@ -148,7 +148,7 @@ def _draw_watermark(
 ) -> Image.Image:
     """우측 상단에 구독 유도 워터마크를 베이크인한다."""
     img = img.copy()
-    font_size = 80
+    font_size = 36
     font = _load_font(font_path, font_size)
     draw = ImageDraw.Draw(img)
 
@@ -157,9 +157,9 @@ def _draw_watermark(
     text_h = bbox[3] - bbox[1]
 
     img_w = img.size[0]
-    box_margin_x, box_margin_y = 24, 16
-    pad_top = 40
-    pad_right = 24
+    box_margin_x, box_margin_y = 20, 12
+    pad_top = 36
+    pad_right = 20
 
     # 우측 상단 기준 좌표
     box_x2 = img_w - pad_right
@@ -169,26 +169,26 @@ def _draw_watermark(
     text_x = box_x1 + box_margin_x
     text_y = box_y1 + box_margin_y
 
-    # 반투명 배경 박스 (더 진하고 강조)
+    # 반투명 다크 배경 박스
     overlay = Image.new("RGBA", img.size, (0, 0, 0, 0))
     ov_draw = ImageDraw.Draw(overlay)
     ov_draw.rounded_rectangle(
         [(box_x1, box_y1), (box_x2, box_y2)],
-        radius=18,
-        fill=(180, 0, 0, 210),   # 빨간 배경으로 강조
+        radius=12,
+        fill=(0, 0, 0, 160),   # 어두운 반투명 블랙
     )
     img = img.convert("RGBA")
     img = Image.alpha_composite(img, overlay).convert("RGB")
     draw = ImageDraw.Draw(img)
 
     # stroke + 본문
-    stroke_w = 3
+    stroke_w = 2
     for dx in [-stroke_w, 0, stroke_w]:
         for dy in [-stroke_w, 0, stroke_w]:
             if dx == 0 and dy == 0:
                 continue
-            draw.text((text_x + dx, text_y + dy), text, font=font, fill=(80, 0, 0))
-    draw.text((text_x, text_y), text, font=font, fill=(255, 255, 255))
+            draw.text((text_x + dx, text_y + dy), text, font=font, fill=(0, 0, 0))
+    draw.text((text_x, text_y), text, font=font, fill=(220, 220, 220))
 
     return img
 
