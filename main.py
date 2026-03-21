@@ -25,13 +25,27 @@ def load_config(path: str = "config.yaml") -> dict:
         return yaml.safe_load(f)
 
 
-def run_single_video(cfg: dict, news_item: dict) -> str:
-    """뉴스 1개로 영상을 생성하고 경로를 반환한다."""
+def run_single_video(cfg: dict, news_item: dict, lang_cfg: dict) -> str:
+    """
+    뉴스 1개 + 언어 설정으로 영상을 생성하고 경로를 반환한다.
+
+    Args:
+        cfg: config.yaml 전체 설정
+        news_item: 뉴스 데이터 dict
+        lang_cfg: config.yaml의 languages 항목 1개
+                  {"code": "ko", "name": "한국어", "tts_voice": ..., "font_path": ..., "watermark": ...}
+    """
     from src.script_gen import generate_script_from_news
     from src.image_gen import generate_image
     from src.tts_gen import generate_tts
     from src.video_maker import make_video, generate_output_filename
     from src.uploader import upload_all
+
+    lang_code  = lang_cfg.get("code", "ko")
+    lang_name  = lang_cfg.get("name", lang_code)
+    tts_voice  = lang_cfg.get("tts_voice")
+    font_path  = lang_cfg.get("font_path")
+    watermark  = lang_cfg.get("watermark", "AI뉴스 구독")
 
     temp_dir     = cfg.get("temp_dir", "temp")
     output_dir   = cfg.get("output_dir", "output")
@@ -43,24 +57,32 @@ def run_single_video(cfg: dict, news_item: dict) -> str:
     fps          = video_cfg.get("fps", 30)
     target_dur   = video_cfg.get("target_duration", 50)
 
-    os.makedirs(temp_dir, exist_ok=True)
+    # 언어별 임시 파일 디렉터리 분리 (동시 생성 시 충돌 방지)
+    lang_temp = os.path.join(temp_dir, lang_code)
+    os.makedirs(lang_temp, exist_ok=True)
     os.makedirs(output_dir, exist_ok=True)
 
-    print(f"\n  뉴스: [{news_item['source']}] {news_item['title'][:50]}...")
+    print(f"\n[{lang_name}] 대본 생성 중...")
 
-    # 1. 대본 생성
-    script = generate_script_from_news(news_item, target_duration=target_dur)
+    # 1. 대본 생성 (해당 언어로)
+    script = generate_script_from_news(
+        news_item,
+        target_duration=target_dur,
+        language=lang_code,
+    )
 
     # 2. 세그먼트별 이미지 + 음성
     segments = []
     for i, seg in enumerate(script["segments"]):
+        print(f"[{lang_name}] 세그먼트 {i+1}/{len(script['segments'])} 생성 중...")
         img = generate_image(prompt=seg["image_prompt"], size=resolution)
 
-        audio_path = os.path.join(temp_dir, f"seg_{i:02d}.mp3")
+        audio_path = os.path.join(lang_temp, f"seg_{i:02d}.mp3")
         generate_tts(
             text=seg["narration"],
             output_path=audio_path,
-            voice=tts_cfg.get("voice"),
+            language=lang_code,
+            voice=tts_voice or tts_cfg.get("voice"),
             speed=tts_cfg.get("speed"),
         )
 
@@ -70,14 +92,16 @@ def run_single_video(cfg: dict, news_item: dict) -> str:
             "narration": seg["narration"],
         })
 
-    # 3. 영상 조합
-    output_path = generate_output_filename(script["title"], output_dir)
+    # 3. 영상 조합 (언어 코드를 파일명에 포함)
+    output_path = generate_output_filename(script["title"], output_dir, suffix=lang_code)
     make_video(
         segments=segments,
         output_path=output_path,
         subtitle_cfg=subtitle_cfg,
         bgm_cfg=bgm_cfg,
         fps=fps,
+        watermark_text=watermark,
+        font_path=font_path,
     )
 
     # 4. 전체 SNS 업로드
@@ -92,8 +116,39 @@ def run_single_video(cfg: dict, news_item: dict) -> str:
     return output_path
 
 
+def run_multilingual_videos(cfg: dict, news_item: dict) -> list[str]:
+    """
+    뉴스 1개로 config의 languages 설정에 따라 다국어 영상을 모두 생성하고
+    업로드한다.
+
+    Returns:
+        생성된 영상 경로 리스트
+    """
+    languages = cfg.get("languages", [{"code": "ko", "name": "한국어"}])
+    paths = []
+
+    print(f"\n{'='*55}")
+    print(f"[다국어 생성] {len(languages)}개 언어: {', '.join(l['name'] for l in languages)}")
+    print(f"  뉴스: [{news_item['source']}] {news_item['title'][:45]}...")
+    print(f"{'='*55}")
+
+    for lang_cfg in languages:
+        lang_name = lang_cfg.get("name", lang_cfg.get("code"))
+        print(f"\n{'─'*50}")
+        print(f"[{lang_name}] 시작")
+        print(f"{'─'*50}")
+        try:
+            path = run_single_video(cfg, news_item, lang_cfg)
+            paths.append(path)
+            print(f"[{lang_name}] 완료: {os.path.basename(path)}")
+        except Exception as e:
+            print(f"[{lang_name}] 실패: {e}")
+
+    return paths
+
+
 def cmd_once(cfg: dict):
-    """뉴스 1개로 영상 즉시 생성."""
+    """뉴스 1개로 다국어 영상 즉시 생성."""
     from src.news_fetcher import fetch_news
     from src.db import save_posted
 
@@ -103,20 +158,20 @@ def cmd_once(cfg: dict):
         return
 
     news = news_list[0]
-    print(f"\n{'='*55}")
-    print(f"[단건 생성]")
-    print(f"{'='*55}")
+    paths = run_multilingual_videos(cfg, news)
 
-    path = run_single_video(cfg, news)
-    save_posted(news, path)
+    if paths:
+        save_posted(news, paths[0])  # 뉴스 중복 방지는 1회만 기록
 
     print(f"\n{'='*55}")
-    print(f"완료: {path}")
+    print(f"완료: {len(paths)}개 영상 생성")
+    for p in paths:
+        print(f"  {os.path.basename(p)}")
     print(f"{'='*55}\n")
 
 
 def cmd_schedule(cfg: dict):
-    """스케줄러 시작 — 매 interval_hours 시간마다 뉴스 1개 영상 생성."""
+    """스케줄러 시작 — 매 interval_hours 시간마다 뉴스 1개 다국어 영상 생성."""
     from src.scheduler import start_scheduler
     from src.news_fetcher import fetch_news
     from src.db import save_posted
@@ -139,9 +194,10 @@ def cmd_schedule(cfg: dict):
             return
         news = news_list[0]
         try:
-            path = run_single_video(cfg, news)
-            save_posted(news, path)
-            print(f"[scheduler] 오늘 {today_count + 1}/{daily_limit}개 완료")
+            paths = run_multilingual_videos(cfg, news)
+            if paths:
+                save_posted(news, paths[0])
+            print(f"[scheduler] 오늘 {today_count + 1}/{daily_limit}개 완료 ({len(paths)}개 언어)")
         except Exception as e:
             print(f"[scheduler] 영상 생성 실패: {e}")
 

@@ -1,6 +1,6 @@
 """
 edge-tts로 텍스트를 MP3 음성 파일로 변환한다.
-한국어 여성 목소리, 빠른 속도 지원.
+한국어/일본어/중국어 목소리 지원.
 """
 import asyncio
 import os
@@ -8,15 +8,14 @@ from typing import Optional
 
 import edge_tts
 
-# ── 사용 가능한 한국어 여성 목소리 ──────────────────────────────────────────────
-VOICES = {
-    "sunhi":  "ko-KR-SunHiNeural",   # 밝고 발랄한 여성 (기본)
-    "yujin":  "ko-KR-YuJinNeural",   # 젊고 활기찬 여성
-    "hyunsu": "ko-KR-HyunsuNeural",  # 남성 (대안)
+# ── 언어별 기본 목소리 ────────────────────────────────────────────────────────
+DEFAULT_VOICES = {
+    "ko": "ko-KR-SunHiNeural",    # 한국어 여성 (밝고 발랄)
+    "ja": "ja-JP-NanamiNeural",   # 일본어 여성 (자연스러운)
+    "zh": "zh-CN-XiaoxiaoNeural", # 중국어 여성 (명료한)
 }
 
-DEFAULT_VOICE = "ko-KR-SunHiNeural"
-DEFAULT_RATE  = "+25%"   # 기본 속도 (양수: 빠름, 음수: 느림)
+DEFAULT_RATE = "+25%"  # 기본 속도 (양수: 빠름, 음수: 느림)
 
 
 async def _async_generate(text: str, output_path: str, voice: str, rate: str):
@@ -37,18 +36,16 @@ def generate_tts(
     Args:
         text: 변환할 텍스트
         output_path: 저장 경로 (.mp3)
-        language: 언어 코드 (현재 ko만 지원)
-        voice: edge-tts 목소리 이름 (None이면 기본값 사용)
+        language: 언어 코드 ("ko" | "ja" | "zh")
+        voice: edge-tts 목소리 이름 (None이면 language 기준 기본값 사용)
         speed: 속도 조절 (+25%, -10% 등)
     """
     os.makedirs(os.path.dirname(output_path) if os.path.dirname(output_path) else ".", exist_ok=True)
 
-    selected_voice = voice or DEFAULT_VOICE
+    selected_voice = voice or DEFAULT_VOICES.get(language, DEFAULT_VOICES["ko"])
     selected_rate  = speed or DEFAULT_RATE
 
     asyncio.run(_async_generate(text, output_path, selected_voice, selected_rate))
 
     print(f"[tts_gen] 음성 생성 완료: {output_path} (목소리: {selected_voice}, 속도: {selected_rate})")
     return output_path
-
-

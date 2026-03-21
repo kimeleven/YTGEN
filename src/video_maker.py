@@ -141,10 +141,13 @@ def _draw_subtitle(
     return img
 
 
-def _draw_watermark(img: Image.Image, font_path: str) -> Image.Image:
+def _draw_watermark(
+    img: Image.Image,
+    font_path: str,
+    text: str = "AI로 제작된 최신AI뉴스 구독",
+) -> Image.Image:
     """우측 상단에 구독 유도 워터마크를 베이크인한다."""
     img = img.copy()
-    text = "AI로 제작된 최신AI뉴스 구독"
     font_size = 80
     font = _load_font(font_path, font_size)
     draw = ImageDraw.Draw(img)
@@ -198,11 +201,15 @@ def make_video(
     subtitle_cfg: dict,
     bgm_cfg: Optional[dict] = None,
     fps: int = 30,
+    watermark_text: str = "AI로 제작된 최신AI뉴스 구독",
+    font_path: Optional[str] = None,
 ) -> str:
     """
     segments: [{"image": PIL.Image, "audio_path": str, "narration": str}, ...]
     subtitle_cfg: config.yaml의 subtitle 섹션
     bgm_cfg: config.yaml의 bgm 섹션 (None이면 BGM 없음)
+    watermark_text: 우측 상단 워터마크 문자열 (언어별로 다름)
+    font_path: 자막·워터마크 폰트 경로 (None이면 subtitle_cfg의 값 사용)
     반환: 생성된 MP4 파일 경로
     """
     clips = []
@@ -213,11 +220,14 @@ def make_video(
         audio_clip = AudioFileClip(seg["audio_path"])
         duration = audio_clip.duration
 
+        # 언어별 폰트 경로 결정 (make_video 인자 우선, 없으면 subtitle_cfg)
+        active_font = font_path or subtitle_cfg.get("font_path", "C:/Windows/Fonts/malgunbd.ttf")
+
         # 자막 베이크인
         frame = _draw_subtitle(
             img=seg["image"],
             text=seg["narration"],
-            font_path=subtitle_cfg.get("font_path", "C:/Windows/Fonts/malgunbd.ttf"),
+            font_path=active_font,
             font_size=subtitle_cfg.get("font_size", 55),
             color=subtitle_cfg.get("color", [255, 255, 255]),
             stroke_color=subtitle_cfg.get("stroke_color", [0, 0, 0]),
@@ -229,7 +239,8 @@ def make_video(
         # 워터마크 베이크인
         frame = _draw_watermark(
             frame,
-            font_path=subtitle_cfg.get("font_path", "C:/Windows/Fonts/malgunbd.ttf"),
+            font_path=active_font,
+            text=watermark_text,
         )
 
         frame_arr = np.array(frame)
@@ -290,9 +301,10 @@ def make_video(
     return output_path
 
 
-def generate_output_filename(title: str, output_dir: str) -> str:
+def generate_output_filename(title: str, output_dir: str, suffix: str = "") -> str:
     """타임스탬프 기반 출력 파일명을 생성한다."""
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
     safe_title = "".join(c if c.isalnum() or c in " _-" else "_" for c in title)[:30].strip()
-    filename = f"{ts}_{safe_title}.mp4"
+    suffix_part = f"_{suffix}" if suffix else ""
+    filename = f"{ts}_{safe_title}{suffix_part}.mp4"
     return os.path.join(output_dir, filename)

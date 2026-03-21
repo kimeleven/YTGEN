@@ -36,6 +36,25 @@ tts:
   # 다른 선택지: ko-KR-YuJinNeural (더 젊은 느낌)
   speed: "+25%"                 # 속도 (+%: 빠름, -%: 느림)
 
+# ── 다국어 설정 ──────────────────────────
+# 영상 1개 생성 시 아래 언어들로 각각 영상을 만들어 업로드한다
+languages:
+  - code: ko
+    name: 한국어
+    tts_voice: "ko-KR-SunHiNeural"
+    font_path: "C:/Windows/Fonts/malgunbd.ttf"
+    watermark: "AI뉴스 구독 & 알림설정"
+  - code: ja
+    name: 日本語
+    tts_voice: "ja-JP-NanamiNeural"
+    font_path: "C:/Windows/Fonts/msgothic.ttc"
+    watermark: "AIニュース チャンネル登録"
+  - code: zh
+    name: 中文
+    tts_voice: "zh-CN-XiaoxiaoNeural"
+    font_path: "C:/Windows/Fonts/msyh.ttc"
+    watermark: "AI新闻 订阅频道"
+
 # ── SNS 업로드 설정 ───────────────────────
 # 토큰/ID는 .env 파일에서 관리 (config에 하드코딩 금지)
 sns:
