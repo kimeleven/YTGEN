@@ -46,24 +46,28 @@ languages:
     font_path: "C:/Windows/Fonts/malgunbd.ttf"
     watermark: "AI뉴스 구독 & 알림설정"
     youtube_regions: ["KR"]
+    platforms: [youtube, instagram, facebook, threads, tiktok]
   - code: en
     name: English
     tts_voice: "en-US-JennyNeural"
     font_path: "C:/Windows/Fonts/malgunbd.ttf"
     watermark: "Subscribe for AI News"
     youtube_regions: ["US", "GB", "CA", "AU", "NZ", "IE"]
+    platforms: [youtube]
   - code: ja
     name: 日本語
     tts_voice: "ja-JP-NanamiNeural"
     font_path: "C:/Windows/Fonts/msgothic.ttc"
     watermark: "AIニュース チャンネル登録"
     youtube_regions: ["JP"]
+    platforms: [youtube]
   - code: zh
     name: 中文
     tts_voice: "zh-CN-XiaoxiaoNeural"
     font_path: "C:/Windows/Fonts/msyh.ttc"
     watermark: "AI新闻 订阅频道"
     youtube_regions: ["CN", "TW", "HK", "MO", "SG"]
+    platforms: [youtube]
 
 # ── SNS 업로드 설정 ───────────────────────
 # 토큰/ID는 .env 파일에서 관리 (config에 하드코딩 금지)

@@ -171,36 +171,39 @@ def upload_all(
     sns_cfg = cfg.get("sns", {})
     lang_code = (lang_cfg or {}).get("code", "ko")
     region_codes = (lang_cfg or {}).get("youtube_regions")
+    # 언어별 업로드 대상 플랫폼 (없으면 전체)
+    allowed = set((lang_cfg or {}).get("platforms", ["youtube", "instagram", "facebook", "threads", "tiktok"]))
     caption = f"{title}\n\n{' '.join('#' + t for t in tags)}\n#AI #Shorts"
 
-    # YouTube (항상 시도)
-    print("\n[upload_all] YouTube 업로드 중...")
-    results["youtube"] = upload_to_youtube(
-        video_path, title, description, tags,
-        default_language=lang_code,
-        region_codes=region_codes,
-    )
+    # YouTube (platforms에 포함된 경우)
+    if "youtube" in allowed:
+        print("\n[upload_all] YouTube 업로드 중...")
+        results["youtube"] = upload_to_youtube(
+            video_path, title, description, tags,
+            default_language=lang_code,
+            region_codes=region_codes,
+        )
 
     # Instagram Reels
-    if sns_cfg.get("instagram", {}).get("enabled"):
+    if "instagram" in allowed and sns_cfg.get("instagram", {}).get("enabled"):
         print("\n[upload_all] Instagram 업로드 중...")
         from src.instagram_uploader import upload_to_instagram
         results["instagram"] = upload_to_instagram(video_path, caption)
 
     # Facebook
-    if sns_cfg.get("facebook", {}).get("enabled"):
+    if "facebook" in allowed and sns_cfg.get("facebook", {}).get("enabled"):
         print("\n[upload_all] Facebook 업로드 중...")
         from src.facebook_uploader import upload_to_facebook
         results["facebook"] = upload_to_facebook(video_path, title, description)
 
     # Threads
-    if sns_cfg.get("threads", {}).get("enabled"):
+    if "threads" in allowed and sns_cfg.get("threads", {}).get("enabled"):
         print("\n[upload_all] Threads 업로드 중...")
         from src.threads_uploader import upload_to_threads
         results["threads"] = upload_to_threads(video_path, caption)
 
     # TikTok
-    if sns_cfg.get("tiktok", {}).get("enabled"):
+    if "tiktok" in allowed and sns_cfg.get("tiktok", {}).get("enabled"):
         print("\n[upload_all] TikTok 업로드 중...")
         from src.tiktok_uploader import upload_to_tiktok
         results["tiktok"] = upload_to_tiktok(video_path, title)
