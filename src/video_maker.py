@@ -142,42 +142,50 @@ def _draw_subtitle(
 
 
 def _draw_watermark(img: Image.Image, font_path: str) -> Image.Image:
-    """상단 좌측에 구독 유도 워터마크를 베이크인한다."""
+    """우측 상단에 구독 유도 워터마크를 베이크인한다."""
     img = img.copy()
     text = "AI로 제작된 최신AI뉴스 구독"
-    font_size = 32
+    font_size = 80
     font = _load_font(font_path, font_size)
     draw = ImageDraw.Draw(img)
 
-    padding_x, padding_y = 24, 40
     bbox = draw.textbbox((0, 0), text, font=font)
     text_w = bbox[2] - bbox[0]
     text_h = bbox[3] - bbox[1]
 
-    # 반투명 배경 박스
-    box_margin = 10
+    img_w = img.size[0]
+    box_margin_x, box_margin_y = 24, 16
+    pad_top = 40
+    pad_right = 24
+
+    # 우측 상단 기준 좌표
+    box_x2 = img_w - pad_right
+    box_x1 = box_x2 - text_w - box_margin_x * 2
+    box_y1 = pad_top
+    box_y2 = pad_top + text_h + box_margin_y * 2
+    text_x = box_x1 + box_margin_x
+    text_y = box_y1 + box_margin_y
+
+    # 반투명 배경 박스 (더 진하고 강조)
     overlay = Image.new("RGBA", img.size, (0, 0, 0, 0))
     ov_draw = ImageDraw.Draw(overlay)
     ov_draw.rounded_rectangle(
-        [
-            (padding_x - box_margin, padding_y - box_margin),
-            (padding_x + text_w + box_margin, padding_y + text_h + box_margin),
-        ],
-        radius=10,
-        fill=(0, 0, 0, 140),
+        [(box_x1, box_y1), (box_x2, box_y2)],
+        radius=18,
+        fill=(180, 0, 0, 210),   # 빨간 배경으로 강조
     )
     img = img.convert("RGBA")
     img = Image.alpha_composite(img, overlay).convert("RGB")
     draw = ImageDraw.Draw(img)
 
     # stroke + 본문
-    stroke_w = 2
+    stroke_w = 3
     for dx in [-stroke_w, 0, stroke_w]:
         for dy in [-stroke_w, 0, stroke_w]:
             if dx == 0 and dy == 0:
                 continue
-            draw.text((padding_x + dx, padding_y + dy), text, font=font, fill=(0, 0, 0))
-    draw.text((padding_x, padding_y), text, font=font, fill=(255, 255, 255))
+            draw.text((text_x + dx, text_y + dy), text, font=font, fill=(80, 0, 0))
+    draw.text((text_x, text_y), text, font=font, fill=(255, 255, 255))
 
     return img
 
