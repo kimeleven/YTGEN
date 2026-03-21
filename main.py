@@ -31,7 +31,7 @@ def run_single_video(cfg: dict, news_item: dict) -> str:
     from src.image_gen import generate_image
     from src.tts_gen import generate_tts
     from src.video_maker import make_video, generate_output_filename
-    from src.uploader import upload_to_youtube
+    from src.uploader import upload_all
 
     temp_dir     = cfg.get("temp_dir", "temp")
     output_dir   = cfg.get("output_dir", "output")
@@ -80,12 +80,13 @@ def run_single_video(cfg: dict, news_item: dict) -> str:
         fps=fps,
     )
 
-    # 4. 업로드
-    upload_to_youtube(
+    # 4. 전체 SNS 업로드
+    upload_all(
         video_path=output_path,
         title=script["title"],
         description=script["description"],
         tags=script["tags"],
+        cfg=cfg,
     )
 
     return output_path

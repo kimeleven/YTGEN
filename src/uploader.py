@@ -1,6 +1,8 @@
 """
 YouTube Data API v3로 Shorts 영상을 업로드한다.
 첫 실행 시 브라우저 OAuth 인증 → token.json 저장 → 이후 자동 갱신.
+
+upload_all()로 활성화된 모든 SNS 플랫폼에 일괄 업로드 가능.
 """
 import os
 import json
@@ -122,3 +124,68 @@ def upload_to_youtube(
         print(f"[uploader] 업로드 실패: {e}")
         print("[uploader] 로컬 저장 URL로 대체합니다.")
         return f"local://{os.path.abspath(video_path)}"
+
+
+def upload_all(
+    video_path: str,
+    title: str,
+    description: str,
+    tags: list[str],
+    cfg: dict,
+) -> dict:
+    """
+    활성화된 모든 SNS 플랫폼에 영상을 업로드한다.
+
+    Args:
+        video_path: 업로드할 MP4 파일 경로
+        title: 영상 제목
+        description: 영상 설명
+        tags: 해시태그 리스트
+        cfg: config.yaml 전체 dict
+
+    Returns:
+        {"youtube": url, "instagram": url, ...} 형태의 결과 dict
+        각 플랫폼 실패 시 해당 값은 "failed: {error}" 문자열
+    """
+    results = {}
+    sns_cfg = cfg.get("sns", {})
+    caption = f"{title}\n\n{' '.join('#' + t for t in tags)}\n#AI #인공지능 #Shorts"
+
+    # YouTube (항상 시도)
+    print("\n[upload_all] YouTube 업로드 중...")
+    results["youtube"] = upload_to_youtube(video_path, title, description, tags)
+
+    # Instagram Reels
+    if sns_cfg.get("instagram", {}).get("enabled"):
+        print("\n[upload_all] Instagram 업로드 중...")
+        from src.instagram_uploader import upload_to_instagram
+        results["instagram"] = upload_to_instagram(video_path, caption)
+
+    # Facebook
+    if sns_cfg.get("facebook", {}).get("enabled"):
+        print("\n[upload_all] Facebook 업로드 중...")
+        from src.facebook_uploader import upload_to_facebook
+        results["facebook"] = upload_to_facebook(video_path, title, description)
+
+    # Threads
+    if sns_cfg.get("threads", {}).get("enabled"):
+        print("\n[upload_all] Threads 업로드 중...")
+        from src.threads_uploader import upload_to_threads
+        results["threads"] = upload_to_threads(video_path, caption)
+
+    # TikTok
+    if sns_cfg.get("tiktok", {}).get("enabled"):
+        print("\n[upload_all] TikTok 업로드 중...")
+        from src.tiktok_uploader import upload_to_tiktok
+        results["tiktok"] = upload_to_tiktok(video_path, title)
+
+    # 결과 요약 출력
+    print("\n" + "=" * 50)
+    print("[upload_all] 업로드 결과 요약")
+    print("=" * 50)
+    for platform, result in results.items():
+        status = "✓" if result.startswith("http") or result.startswith("published") else "✗"
+        print(f"  {status} {platform}: {result}")
+    print("=" * 50)
+
+    return results

@@ -36,6 +36,18 @@ tts:
   # 다른 선택지: ko-KR-YuJinNeural (더 젊은 느낌)
   speed: "+25%"                 # 속도 (+%: 빠름, -%: 느림)
 
+# ── SNS 업로드 설정 ───────────────────────
+# 토큰/ID는 .env 파일에서 관리 (config에 하드코딩 금지)
+sns:
+  instagram:
+    enabled: true    # META_ACCESS_TOKEN, INSTAGRAM_USER_ID 필요
+  facebook:
+    enabled: true    # META_ACCESS_TOKEN, FACEBOOK_PAGE_ID 필요
+  threads:
+    enabled: true    # META_ACCESS_TOKEN, THREADS_USER_ID 필요
+  tiktok:
+    enabled: true    # TIKTOK_CLIENT_KEY, TIKTOK_CLIENT_SECRET, TIKTOK_ACCESS_TOKEN, TIKTOK_REFRESH_TOKEN 필요
+
 # ── 저장 경로 ────────────────────────────
 output_dir: "output"
 temp_dir: "temp"
