@@ -1,4 +1,4 @@
-import { createServiceClient, Topic, YoutubeAccount } from "@/lib/supabase"
+import { createServiceClient, Topic } from "@/lib/supabase"
 
 async function getTopicsWithAccounts(): Promise<(Topic & { youtube_connected: boolean; today_count: number })[]> {
   const sb = createServiceClient()
@@ -7,7 +7,7 @@ async function getTopicsWithAccounts(): Promise<(Topic & { youtube_connected: bo
   if (!topics) return []
 
   const { data: accounts } = await sb.from("youtube_accounts").select("topic_id")
-  const connectedIds = new Set((accounts || []).map((a: YoutubeAccount) => a.topic_id))
+  const connectedIds = new Set((accounts || []).map((a: { topic_id: string }) => a.topic_id))
 
   const today = new Date().toISOString().slice(0, 10)
   const { data: todayVideos } = await sb
