@@ -1,14 +1,24 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
+import { Suspense } from "react"
 
-export default function ConnectYoutubePage({ params }: { params: { id: string } }) {
+function ConnectYoutubeForm({ params }: { params: { id: string } }) {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const urlError = searchParams.get("error")
+
+  const errorMessages: Record<string, string> = {
+    token_exchange: "Google 인증 코드 교환 실패. 다시 시도해 주세요.",
+    no_secret: "저장된 client_secret이 없습니다. 다시 입력해 주세요.",
+    parse_error: "client_secret 형식이 올바르지 않습니다.",
+  }
+
   const [clientSecretJson, setClientSecretJson] = useState("")
   const [channelName, setChannelName] = useState("")
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState("")
+  const [error, setError] = useState(urlError ? (errorMessages[urlError] || "오류가 발생했습니다.") : "")
   const [guideOpen, setGuideOpen] = useState(false)
 
   async function handleConnect(e: React.FormEvent) {
@@ -154,5 +164,13 @@ export default function ConnectYoutubePage({ params }: { params: { id: string } 
         </div>
       </form>
     </div>
+  )
+}
+
+export default function ConnectYoutubePage({ params }: { params: { id: string } }) {
+  return (
+    <Suspense>
+      <ConnectYoutubeForm params={params} />
+    </Suspense>
   )
 }

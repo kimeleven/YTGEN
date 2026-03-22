@@ -12,50 +12,111 @@ async function getData(id: string) {
   ` as Video[]
 
   const accountRows = await db`
-    SELECT channel_name, updated_at FROM youtube_accounts WHERE topic_id = ${id}
+    SELECT channel_name, updated_at, token_json FROM youtube_accounts WHERE topic_id = ${id}
   `
   const account = accountRows[0] || null
 
   return { topic, videos, account }
 }
 
-export default async function TopicDetailPage({ params }: { params: { id: string } }) {
+export default async function TopicDetailPage({
+  params,
+  searchParams,
+}: {
+  params: { id: string }
+  searchParams: { connected?: string; error?: string }
+}) {
   const data = await getData(params.id)
   if (!data) notFound()
   const { topic, videos, account } = data
+
+  const isConnected = account && account.token_json && account.token_json !== "pending"
+  const isPending = account && account.token_json === "pending"
 
   const langCounts: Record<string, number> = {}
   for (const v of videos) {
     if (v.language) langCounts[v.language] = (langCounts[v.language] || 0) + 1
   }
 
+  const errorMessages: Record<string, string> = {
+    token_exchange: "Google 인증 코드 교환에 실패했습니다. 다시 시도해 주세요.",
+    no_secret: "client_secret이 저장되지 않았습니다. 다시 연결을 시도해 주세요.",
+    parse_error: "저장된 client_secret 형식이 올바르지 않습니다.",
+  }
+
   return (
     <div className="space-y-6">
+
+      {/* 연결 성공 배너 */}
+      {searchParams.connected === "1" && (
+        <div className="bg-green-50 border border-green-300 rounded-xl px-4 py-3 flex items-center gap-3">
+          <span className="text-2xl">✅</span>
+          <div>
+            <p className="font-semibold text-green-800">YouTube 계정 연결 완료!</p>
+            <p className="text-sm text-green-600">이제 이 주제의 영상이 연결된 채널에 자동 업로드됩니다.</p>
+          </div>
+        </div>
+      )}
+
+      {/* 연결 실패 배너 */}
+      {searchParams.error && (
+        <div className="bg-red-50 border border-red-300 rounded-xl px-4 py-3 flex items-center gap-3">
+          <span className="text-2xl">❌</span>
+          <div>
+            <p className="font-semibold text-red-800">YouTube 연결 실패</p>
+            <p className="text-sm text-red-600">{errorMessages[searchParams.error] || "알 수 없는 오류가 발생했습니다."}</p>
+          </div>
+        </div>
+      )}
+
       {/* 헤더 */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold">{topic.name}</h1>
+          <a href="/" className="text-sm text-gray-400 hover:text-gray-600">← 대시보드</a>
+          <h1 className="text-2xl font-bold mt-1">{topic.name}</h1>
           {topic.description && <p className="text-gray-500 mt-1">{topic.description}</p>}
         </div>
-        <div className="flex gap-2">
-          <a href={`/topics/${topic.id}/connect-youtube`} className="text-sm border rounded-md px-3 py-1.5 hover:bg-gray-50">
-            YouTube {account ? "재연결" : "연결"}
-          </a>
-          <RunNowButton topicId={topic.id} />
-        </div>
+        <RunNowButton topicId={topic.id} />
       </div>
 
-      {/* YouTube 상태 */}
-      <div className="bg-white rounded-xl border p-4">
-        <h2 className="font-semibold mb-2">YouTube 계정</h2>
-        {account ? (
-          <div className="text-sm text-gray-600 space-y-1">
-            <div>✅ 채널: {account.channel_name || "연결됨"}</div>
-            <div>🕐 마지막 업데이트: {new Date(account.updated_at).toLocaleString("ko-KR")}</div>
+      {/* YouTube 연결 상태 */}
+      <div className={`rounded-xl border p-4 ${isConnected ? "bg-green-50 border-green-200" : isPending ? "bg-yellow-50 border-yellow-200" : "bg-red-50 border-red-200"}`}>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">
+              {isConnected ? "✅" : isPending ? "⏳" : "❌"}
+            </span>
+            <div>
+              <p className={`font-semibold ${isConnected ? "text-green-800" : isPending ? "text-yellow-800" : "text-red-800"}`}>
+                {isConnected
+                  ? `YouTube 연결됨${account.channel_name ? ` — ${account.channel_name}` : ""}`
+                  : isPending
+                  ? "YouTube 연결 미완료 (인증이 필요합니다)"
+                  : "YouTube 미연결"}
+              </p>
+              {isConnected && (
+                <p className="text-xs text-green-600 mt-0.5">
+                  마지막 업데이트: {new Date(account.updated_at).toLocaleString("ko-KR")}
+                </p>
+              )}
+              {!isConnected && (
+                <p className={`text-xs mt-0.5 ${isPending ? "text-yellow-600" : "text-red-600"}`}>
+                  YouTube 채널을 연결해야 자동 업로드가 가능합니다.
+                </p>
+              )}
+            </div>
           </div>
-        ) : (
-          <div className="text-sm text-gray-400">❌ YouTube 계정이 연결되지 않았습니다.</div>
-        )}
+          <a
+            href={`/topics/${topic.id}/connect-youtube`}
+            className={`text-sm px-3 py-1.5 rounded-md border ${
+              isConnected
+                ? "border-green-300 text-green-700 hover:bg-green-100"
+                : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
+            }`}
+          >
+            {isConnected ? "재연결" : isPending ? "인증 완료하기" : "연결하기"}
+          </a>
+        </div>
       </div>
 
       {/* 통계 */}
