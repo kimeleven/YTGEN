@@ -81,5 +81,15 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(new URL(`/topics/${topicId}/connect-youtube?error=db_save`, baseUrl))
   }
 
+  // 저장 확인
+  const verify = await db`SELECT token_json FROM youtube_accounts WHERE topic_id = ${topicId}`
+  const saved = verify[0]?.token_json
+  console.log("[youtube/callback] verify token_json starts with:", saved?.slice(0, 20))
+
+  if (!saved || saved === "pending") {
+    console.error("[youtube/callback] token still pending after save!")
+    return NextResponse.redirect(new URL(`/topics/${topicId}/connect-youtube?error=db_save`, baseUrl))
+  }
+
   return NextResponse.redirect(new URL(`/topics/${topicId}?connected=1`, baseUrl))
 }

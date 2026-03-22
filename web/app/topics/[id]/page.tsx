@@ -1,6 +1,9 @@
 import { sql, Topic, Video } from "@/lib/db"
 import { notFound } from "next/navigation"
 
+export const dynamic = "force-dynamic"
+export const revalidate = 0
+
 async function getData(id: string) {
   const db = sql()
   const topicRows = await db`SELECT * FROM topics WHERE id = ${id}` as Topic[]
