@@ -1,0 +1,71 @@
+name: YouTube Shorts (AI뉴스 단일 채널)
+
+on:
+  schedule:
+    - cron: '0 3,9,15,21 * * *'   # 6시간 간격, web과 3시간 엇갈림 (UTC 03/09/15/21시 = KST 12/18/00/06시)
+  workflow_dispatch:        # GitHub에서 수동 실행 가능
+
+jobs:
+  generate-and-upload:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+
+    steps:
+      # ── 1. 코드 체크아웃 ────────────────────────────────────
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ── 2. Python 설정 ──────────────────────────────────────
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      # ── 3. 시스템 패키지 (ffmpeg + 한글 폰트) ───────────────
+      - name: Install system packages
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y ffmpeg fonts-nanum
+
+      # ── 4. Python 패키지 ────────────────────────────────────
+      - name: Install Python packages
+        run: pip install -r requirements.txt
+
+      # ── 5. DB 캐시 복원 (처리된 뉴스 URL 유지) ──────────────
+      - name: Restore DB cache
+        uses: actions/cache@v4
+        with:
+          path: data/ytgen.db
+          key: ytgen-db-${{ github.run_number }}
+          restore-keys: |
+            ytgen-db-
+
+      # ── 6. 시크릿 파일 생성 ─────────────────────────────────
+      - name: Write credentials
+        run: |
+          echo '${{ secrets.CLIENT_SECRET_JSON }}' > client_secret.json
+          mkdir -p data
+          echo '${{ secrets.TOKEN_JSON }}' > data/token.json
+
+      # ── 7. 영상 생성 + 전체 SNS 업로드 ─────────────────────
+      - name: Generate and upload
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          META_APP_ID: ${{ secrets.META_APP_ID }}
+          META_APP_SECRET: ${{ secrets.META_APP_SECRET }}
+          META_ACCESS_TOKEN: ${{ secrets.META_ACCESS_TOKEN }}
+          FACEBOOK_PAGE_ID: ${{ secrets.FACEBOOK_PAGE_ID }}
+          INSTAGRAM_USER_ID: ${{ secrets.INSTAGRAM_USER_ID }}
+          THREADS_USER_ID: ${{ secrets.THREADS_USER_ID }}
+        run: python -X utf8 main.py once
+
+      # ── 8. 생성된 영상 아티팩트 저장 (7일 보관) ─────────────
+      - name: Upload video artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: shorts-ainews-${{ github.run_number }}
+          path: output/*.mp4
+          retention-days: 7
+          if-no-files-found: ignore

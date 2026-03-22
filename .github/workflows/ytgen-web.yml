@@ -1,4 +1,4 @@
-name: YouTube Shorts Auto Upload
+name: YouTube Shorts (웹 관리 - 멀티 주제)
 
 on:
   schedule:
@@ -55,7 +55,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: shorts-${{ github.run_number }}
+          name: shorts-web-${{ github.run_number }}
           path: output/*.mp4
           retention-days: 7
           if-no-files-found: ignore
