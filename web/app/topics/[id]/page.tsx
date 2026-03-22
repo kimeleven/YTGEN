@@ -1,5 +1,6 @@
 import { sql, Topic, Video } from "@/lib/db"
 import { notFound } from "next/navigation"
+import RunButton from "./RunButton"
 
 export const dynamic = "force-dynamic"
 export const revalidate = 0
@@ -79,7 +80,7 @@ export default async function TopicDetailPage({
           <h1 className="text-2xl font-bold mt-1">{topic.name}</h1>
           {topic.description && <p className="text-gray-500 mt-1">{topic.description}</p>}
         </div>
-        <RunNowButton topicId={topic.id} />
+        <RunButton topicId={topic.id} />
       </div>
 
       {/* YouTube 연결 상태 */}
@@ -179,12 +180,3 @@ function StatCard({ label, value }: { label: string; value: string | number }) {
   )
 }
 
-function RunNowButton({ topicId }: { topicId: string }) {
-  return (
-    <form action={`/api/topics/${topicId}/run`} method="POST">
-      <button type="submit" className="text-sm bg-blue-600 text-white rounded-md px-3 py-1.5 hover:bg-blue-700">
-        ▶ 지금 실행
-      </button>
-    </form>
-  )
-}
