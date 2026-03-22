@@ -55,6 +55,7 @@ def generate_script_from_news(
     news_item: dict,
     target_duration: int = 50,
     language: str = "ko",
+    channel_hint: str = "",
 ) -> dict:
     """
     뉴스 기사를 바탕으로 YouTube Shorts 대본을 생성한다.
@@ -63,6 +64,7 @@ def generate_script_from_news(
         news_item: {"source", "title", "summary", "url", "published"}
         target_duration: 목표 영상 길이 (초)
         language: 대본 언어 코드 ("ko" | "ja" | "zh")
+        channel_hint: 채널/주제 이름 (마지막 멘트에 반영)
     """
     api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
@@ -71,6 +73,12 @@ def generate_script_from_news(
     client = genai.Client(api_key=api_key)
     segment_count = max(4, min(7, target_duration // 8))
     lc = _LANG_CONFIG.get(language, _LANG_CONFIG["ko"])
+
+    closing_instruction = (
+        f'구독 유도 멘트로 마무리 (이 채널의 주제인 "{channel_hint}"에 어울리는 자연스러운 표현으로)'
+        if channel_hint
+        else f'"{lc["closing"]}"'
+    )
 
     prompt = f"""
 당신은 AI/테크 뉴스를 명확하게 전달하는 뉴스 앵커형 YouTube Shorts 제작자입니다.
@@ -90,7 +98,7 @@ def generate_script_from_news(
 세그먼트 구성:
 1. 첫 세그먼트: 핵심 사실 한 줄 요약으로 시작 (무엇이 어떻게 됐는지)
 2. 중간 세그먼트: 배경, 세부 내용, 수치, 영향 등 구체적 정보 전달
-3. 마지막 세그먼트: 의미와 전망 정리, "{lc['closing']}"
+3. 마지막 세그먼트: 의미와 전망 정리, {closing_instruction}
 
 image_prompt 기준:
 - 뉴스 내용을 시각적으로 표현하는 영어 프롬프트
@@ -123,7 +131,7 @@ image_prompt 기준:
     return script
 
 
-def generate_script(topic: str, target_duration: int = 50, language: str = "ko") -> dict:
+def generate_script(topic: str, target_duration: int = 50, language: str = "ko", channel_hint: str = "") -> dict:
     """
     주제(topic)를 받아 숏츠 대본 JSON을 반환한다.
 
@@ -131,6 +139,7 @@ def generate_script(topic: str, target_duration: int = 50, language: str = "ko")
         topic: 영상 주제
         target_duration: 목표 영상 길이 (초)
         language: 대본 언어 코드 ("ko" | "ja" | "zh")
+        channel_hint: 채널/주제 이름 (마지막 멘트에 반영)
     """
     api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
@@ -139,6 +148,12 @@ def generate_script(topic: str, target_duration: int = 50, language: str = "ko")
     client = genai.Client(api_key=api_key)
     segment_count = max(4, min(7, target_duration // 8))
     lc = _LANG_CONFIG.get(language, _LANG_CONFIG["ko"])
+
+    closing_instruction = (
+        f'구독 유도 멘트로 마무리 (이 채널의 주제인 "{channel_hint}"에 어울리는 자연스러운 표현으로)'
+        if channel_hint
+        else f'"{lc["closing"]}"'
+    )
 
     prompt = f"""
 당신은 YouTube Shorts 전문 콘텐츠 제작자입니다.
@@ -151,7 +166,7 @@ def generate_script(topic: str, target_duration: int = 50, language: str = "ko")
 요구사항:
 - 각 세그먼트의 narration은 천천히 읽으면 8~12초 분량 (50~80자)
 - 첫 세그먼트는 시청자의 흥미를 끄는 후킹 문장으로 시작
-- 마지막 세그먼트는 "{lc['closing']}"
+- 마지막 세그먼트는 {closing_instruction}
 - {lc['char_rule']}
 - image_prompt는 해당 내용을 표현하는 영어 이미지 설명 (Imagen AI용, 세부적이고 시각적으로)
 - image_prompt는 반드시 9:16 세로 비율에 맞는 구도로 묘사

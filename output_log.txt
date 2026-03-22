@@ -1,0 +1,55 @@
+
+==================================================
+[1/4] 대본 생성 중... (주제: 파이썬 프로그래밍 꿀팁)
+[script_gen] 대본 생성 완료 - '⚡️파이썬 개발 속도 2배 UP! 코딩 꿀팁 5가지 대방출! #Shorts' (6개 세그먼트)
+
+[2/4] 이미지 & 음성 생성 중... (6개 세그먼트)
+  세그먼트 1: 파이썬 코딩, 더 빠르고 스마트하게 하고 싶으세요? 🔥...
+[image_gen] Imagen 생성 실패 (404 NOT_FOUND. {'error': {'code': 404, 'message': 'models/imagen-3.0-generate-002 is not found for API version v1beta, or is not supported for predict. Call ListModels to see the list of available models and their supported methods.', 'status': 'NOT_FOUND'}}), 그라디언트 fallback 사용
+[image_gen] 그라디언트 배경 생성 완료
+[tts_gen] 음성 생성 완료: temp\seg_00.mp3
+  세그먼트 2: 첫 번째 꿀팁! F-string입니다. 문자열에 변수나...
+[image_gen] Imagen 생성 실패 (404 NOT_FOUND. {'error': {'code': 404, 'message': 'models/imagen-3.0-generate-002 is not found for API version v1beta, or is not supported for predict. Call ListModels to see the list of available models and their supported methods.', 'status': 'NOT_FOUND'}}), 그라디언트 fallback 사용
+[image_gen] 그라디언트 배경 생성 완료
+[tts_gen] 음성 생성 완료: temp\seg_01.mp3
+  세그먼트 3: 두 번째 꿀팁! 리스트 컴프리헨션입니다. 복잡한 for...
+[image_gen] Imagen 생성 실패 (404 NOT_FOUND. {'error': {'code': 404, 'message': 'models/imagen-3.0-generate-002 is not found for API version v1beta, or is not supported for predict. Call ListModels to see the list of available models and their supported methods.', 'status': 'NOT_FOUND'}}), 그라디언트 fallback 사용
+[image_gen] 그라디언트 배경 생성 완료
+[tts_gen] 음성 생성 완료: temp\seg_02.mp3
+  세그먼트 4: 세 번째 꿀팁, enumerate입니다. for 루프에...
+[image_gen] Imagen 생성 실패 (404 NOT_FOUND. {'error': {'code': 404, 'message': 'models/imagen-3.0-generate-002 is not found for API version v1beta, or is not supported for predict. Call ListModels to see the list of available models and their supported methods.', 'status': 'NOT_FOUND'}}), 그라디언트 fallback 사용
+[image_gen] 그라디언트 배경 생성 완료
+[tts_gen] 음성 생성 완료: temp\seg_03.mp3
+  세그먼트 5: 네 번째 꿀팁, zip 함수! 여러 개의 리스트나 반복...
+[image_gen] Imagen 생성 실패 (404 NOT_FOUND. {'error': {'code': 404, 'message': 'models/imagen-3.0-generate-002 is not found for API version v1beta, or is not supported for predict. Call ListModels to see the list of available models and their supported methods.', 'status': 'NOT_FOUND'}}), 그라디언트 fallback 사용
+[image_gen] 그라디언트 배경 생성 완료
+[tts_gen] 음성 생성 완료: temp\seg_04.mp3
+  세그먼트 6: 마지막 꿀팁! `collections.Counter`로...
+[image_gen] Imagen 생성 실패 (404 NOT_FOUND. {'error': {'code': 404, 'message': 'models/imagen-3.0-generate-002 is not found for API version v1beta, or is not supported for predict. Call ListModels to see the list of available models and their supported methods.', 'status': 'NOT_FOUND'}}), 그라디언트 fallback 사용
+[image_gen] 그라디언트 배경 생성 완료
+[tts_gen] 음성 생성 완료: temp\seg_05.mp3
+
+[3/4] 영상 조합 중...
+[video_maker] 세그먼트 1/6 처리 중...
+[video_maker] 세그먼트 2/6 처리 중...
+[video_maker] 세그먼트 3/6 처리 중...
+[video_maker] 세그먼트 4/6 처리 중...
+[video_maker] 세그먼트 5/6 처리 중...
+[video_maker] 세그먼트 6/6 처리 중...
+[video_maker] 클립 연결 중...
+[video_maker] 영상 인코딩 중... → output\20260319_210941___파이썬 개발 속도 2배 UP_ 코딩 꿀팁 5가지 대.mp4
+[video_maker] 완료: output\20260319_210941___파이썬 개발 속도 2배 UP_ 코딩 꿀팁 5가지 대.mp4
+
+[4/4] 업로드...
+[uploader] ⚠️  YouTube 업로드는 아직 구현되지 않았습니다.
+[uploader] 영상이 로컬에 저장됨: output\20260319_210941___파이썬 개발 속도 2배 UP_ 코딩 꿀팁 5가지 대.mp4
+[uploader] 제목: ⚡️파이썬 개발 속도 2배 UP! 코딩 꿀팁 5가지 대방출! #Shorts
+[uploader] 태그: 파이썬, 코딩꿀팁, 개발자, 파이썬Shorts, PythonTips
+
+==================================================
+✅ 완료!
+   제목: ⚡️파이썬 개발 속도 2배 UP! 코딩 꿀팁 5가지 대방출! #Shorts
+   파일: output\20260319_210941___파이썬 개발 속도 2배 UP_ 코딩 꿀팁 5가지 대.mp4
+   결과: local://C:\Users\kimel\Desktop\CodeWork\YTGen\output\20260319_210941___파이썬 개발 속도 2배 UP_ 코딩 꿀팁 5가지 대.mp4
+==================================================
+

@@ -18,14 +18,14 @@ TOKEN_FILE    = "data/token.json"
 SCOPES        = ["https://www.googleapis.com/auth/youtube"]
 
 
-def _get_credentials() -> Credentials:
+def _get_credentials(token_file: str = TOKEN_FILE, secret_file: str = CLIENT_SECRET) -> Credentials:
     """OAuth2 인증 정보를 반환한다. 없으면 브라우저 인증 실행."""
-    os.makedirs(os.path.dirname(TOKEN_FILE), exist_ok=True)
+    os.makedirs(os.path.dirname(token_file) or ".", exist_ok=True)
     creds = None
 
-    if os.path.exists(TOKEN_FILE):
+    if os.path.exists(token_file):
         try:
-            creds = Credentials.from_authorized_user_file(TOKEN_FILE, SCOPES)
+            creds = Credentials.from_authorized_user_file(token_file, SCOPES)
         except Exception as e:
             print(f"[uploader] 기존 token.json 로드 실패: {e}")
             creds = None
@@ -41,11 +41,11 @@ def _get_credentials() -> Credentials:
 
         if not creds:
             print("[uploader] 브라우저에서 Google 계정 인증을 진행합니다...")
-            flow = InstalledAppFlow.from_client_secrets_file(CLIENT_SECRET, SCOPES)
+            flow = InstalledAppFlow.from_client_secrets_file(secret_file, SCOPES)
             creds = flow.run_local_server(port=0)
             print("[uploader] 인증 완료")
 
-        with open(TOKEN_FILE, "w", encoding="utf-8") as f:
+        with open(token_file, "w", encoding="utf-8") as f:
             f.write(creds.to_json())
 
     return creds
@@ -58,6 +58,8 @@ def upload_to_youtube(
     tags: list[str],
     default_language: str = "ko",
     region_codes: list[str] | None = None,
+    token_json: str | None = None,
+    client_secret_json: str | None = None,
 ) -> str:
     """
     YouTube Shorts에 영상을 업로드한다.
@@ -69,7 +71,26 @@ def upload_to_youtube(
     Returns:
         업로드된 영상의 YouTube URL
     """
-    if not os.path.exists(CLIENT_SECRET):
+    # 문자열 토큰이 전달된 경우 임시 파일로 저장 후 사용
+    import tempfile
+    _tmp_files = []
+    _active_token_file  = TOKEN_FILE
+    _active_secret_file = CLIENT_SECRET
+
+    if token_json and client_secret_json:
+        _tf_token = tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False, encoding="utf-8")
+        _tf_token.write(token_json)
+        _tf_token.close()
+        _tmp_files.append(_tf_token.name)
+
+        _tf_secret = tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False, encoding="utf-8")
+        _tf_secret.write(client_secret_json)
+        _tf_secret.close()
+        _tmp_files.append(_tf_secret.name)
+
+        _active_token_file  = _tf_token.name
+        _active_secret_file = _tf_secret.name
+    elif not os.path.exists(CLIENT_SECRET):
         print("[uploader] client_secret.json 없음 — 업로드 건너뜀")
         return f"local://{os.path.abspath(video_path)}"
 
@@ -78,7 +99,7 @@ def upload_to_youtube(
         print(f"[uploader] 지역 제한: {', '.join(region_codes)}")
 
     try:
-        creds = _get_credentials()
+        creds = _get_credentials(_active_token_file, _active_secret_file)
         youtube = build("youtube", "v3", credentials=creds)
 
         shorts_description = f"{description}\n\n#Shorts #AI"
@@ -142,6 +163,12 @@ def upload_to_youtube(
         print(f"[uploader] 업로드 실패: {e}")
         print("[uploader] 로컬 저장 URL로 대체합니다.")
         return f"local://{os.path.abspath(video_path)}"
+    finally:
+        for f in _tmp_files:
+            try:
+                os.remove(f)
+            except Exception:
+                pass
 
 
 def upload_all(
@@ -151,6 +178,8 @@ def upload_all(
     tags: list[str],
     cfg: dict,
     lang_cfg: dict | None = None,
+    yt_token_json: str | None = None,
+    yt_client_secret_json: str | None = None,
 ) -> dict:
     """
     활성화된 모든 SNS 플랫폼에 영상을 업로드한다.
@@ -182,6 +211,8 @@ def upload_all(
             video_path, title, description, tags,
             default_language=lang_code,
             region_codes=region_codes,
+            token_json=yt_token_json,
+            client_secret_json=yt_client_secret_json,
         )
 
     # Instagram Reels

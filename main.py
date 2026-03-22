@@ -1,9 +1,11 @@
 """
 YouTube Shorts 자동 생성기
 사용법:
-    python main.py once       # 뉴스 1개로 영상 즉시 생성 (테스트)
-    python main.py schedule   # 스케줄러 시작 (config의 interval_hours 기준)
-    python main.py list       # 생성된 영상 목록 + DB 통계
+    python main.py once              # 뉴스 1개로 영상 즉시 생성 (테스트)
+    python main.py schedule          # 스케줄러 시작 (config의 interval_hours 기준)
+    python main.py list              # 생성된 영상 목록 + DB 통계
+    python main.py web               # Supabase에서 다음 주제 자동 선택 후 실행
+    python main.py web <topic_id>    # Supabase의 특정 주제 실행
 """
 import os
 import sys
@@ -25,7 +27,7 @@ def load_config(path: str = "config.yaml") -> dict:
         return yaml.safe_load(f)
 
 
-def run_single_video(cfg: dict, news_item: dict, lang_cfg: dict) -> str:
+def run_single_video(cfg: dict, news_item: dict, lang_cfg: dict, channel_hint: str = "") -> str:
     """
     뉴스 1개 + 언어 설정으로 영상을 생성하고 경로를 반환한다.
 
@@ -34,6 +36,7 @@ def run_single_video(cfg: dict, news_item: dict, lang_cfg: dict) -> str:
         news_item: 뉴스 데이터 dict
         lang_cfg: config.yaml의 languages 항목 1개
                   {"code": "ko", "name": "한국어", "tts_voice": ..., "font_path": ..., "watermark": ...}
+        channel_hint: 채널/주제 이름 (마지막 멘트에 반영)
     """
     from src.script_gen import generate_script_from_news
     from src.image_gen import generate_image
@@ -65,11 +68,21 @@ def run_single_video(cfg: dict, news_item: dict, lang_cfg: dict) -> str:
     print(f"\n[{lang_name}] 대본 생성 중...")
 
     # 1. 대본 생성 (해당 언어로)
-    script = generate_script_from_news(
-        news_item,
-        target_duration=target_dur,
-        language=lang_code,
-    )
+    if news_item.get("_is_ai"):
+        from src.script_gen import generate_script
+        script = generate_script(
+            topic=f"{news_item['title']}\n\n{news_item.get('summary', '')}",
+            target_duration=target_dur,
+            language=lang_code,
+            channel_hint=channel_hint,
+        )
+    else:
+        script = generate_script_from_news(
+            news_item,
+            target_duration=target_dur,
+            language=lang_code,
+            channel_hint=channel_hint,
+        )
 
     # 2. 세그먼트별 이미지 + 음성
     segments = []
@@ -105,6 +118,8 @@ def run_single_video(cfg: dict, news_item: dict, lang_cfg: dict) -> str:
     )
 
     # 4. 전체 SNS 업로드 (YouTube는 언어·지역 제한 적용)
+    yt_token     = lang_cfg.get("_yt_token_json")
+    yt_secret    = lang_cfg.get("_yt_client_secret_json")
     upload_all(
         video_path=output_path,
         title=script["title"],
@@ -112,6 +127,8 @@ def run_single_video(cfg: dict, news_item: dict, lang_cfg: dict) -> str:
         tags=script["tags"],
         cfg=cfg,
         lang_cfg=lang_cfg,
+        yt_token_json=yt_token,
+        yt_client_secret_json=yt_secret,
     )
 
     return output_path
@@ -226,6 +243,115 @@ def cmd_list(cfg: dict):
         print(f"  {os.path.basename(v)}  ({size_mb:.1f} MB)")
 
 
+def cmd_web(cfg: dict, topic_id: str = None):
+    """Supabase 주제 기반 다중 채널 영상 생성 + 업로드."""
+    from src.supabase_client import (
+        get_next_topic, get_topic_youtube_token,
+        save_video_result, mark_news_posted, get_posted_urls, update_last_run,
+    )
+    from src.news_fetcher import fetch_news
+
+    topic = get_next_topic(topic_id)
+    if not topic:
+        print("[web] 실행할 주제가 없습니다 (active 주제 없음).")
+        return
+
+    print(f"\n[web] 주제: {topic['name']} (id: {topic['id']})")
+
+    # 주제별 config 오버라이드 (없으면 config.yaml 기본값 사용)
+    topic_cfg = {**cfg, **topic.get("config", {})}
+    languages  = topic_cfg.get("languages", cfg.get("languages", [{"code": "ko", "name": "한국어"}]))
+    keywords   = topic.get("keywords") or []
+
+    # YouTube 토큰 로드 (주제별)
+    yt_tokens = get_topic_youtube_token(topic["id"])
+    if not yt_tokens:
+        print(f"[web] YouTube 계정이 연결되지 않았습니다 (topic_id: {topic['id']}). 업로드 건너뜀.")
+        yt_token_json, yt_client_secret_json = None, None
+    else:
+        yt_token_json, yt_client_secret_json = yt_tokens
+        print(f"[web] YouTube 토큰 로드 완료")
+
+    # 이 주제에서 이미 처리된 URL/제목 집합
+    posted_urls = get_posted_urls(topic["id"])
+
+    # 콘텐츠 모드 분기
+    content_mode = topic.get("config", {}).get("content_mode", "news")
+
+    if content_mode == "ai_prompt":
+        from src.content_generator import pick_ai_topic
+        ai_prompt = topic.get("config", {}).get("ai_prompt", "")
+        if not ai_prompt:
+            print(f"[web] [{topic['name']}] ai_prompt가 설정되지 않았습니다.")
+            return
+        topic_idea = pick_ai_topic(ai_prompt, exclude_titles=posted_urls)
+        if not topic_idea:
+            print(f"[web] [{topic['name']}] 새로운 AI 주제 없음.")
+            return
+        news = {
+            "source": "AI생성",
+            "title": topic_idea["title"],
+            "summary": topic_idea.get("summary", ""),
+            "url": f"ai://{topic_idea['title']}",
+            "_is_ai": True,
+        }
+    else:
+        # 뉴스 가져오기 (주제 키워드 적용)
+        news_list = fetch_news(
+            max_count=1,
+            skip_processed=True,
+            exclude_urls=posted_urls,
+            keywords=keywords or None,
+        )
+        if not news_list:
+            print(f"[web] [{topic['name']}] 새로운 뉴스 없음.")
+            return
+        news = news_list[0]
+
+    # 언어별 영상 생성 (YouTube 토큰을 lang_cfg에 임시 주입)
+    paths = []
+    for lang_cfg in languages:
+        lang_name = lang_cfg.get("name", lang_cfg.get("code"))
+        print(f"\n{'─'*50}")
+        print(f"[{lang_name}] 시작")
+        print(f"{'─'*50}")
+        # 토큰을 lang_cfg에 주입 (uploader로 전달)
+        lang_cfg_with_token = {
+            **lang_cfg,
+            "_yt_token_json": yt_token_json,
+            "_yt_client_secret_json": yt_client_secret_json,
+        }
+        try:
+            path = run_single_video(topic_cfg, news, lang_cfg_with_token, channel_hint=topic.get("name", ""))
+            paths.append((path, lang_cfg.get("code", "ko")))
+            print(f"[{lang_name}] 완료: {os.path.basename(path)}")
+
+            # 영상 이력 저장 (언어별)
+            save_video_result(
+                topic_id=topic["id"],
+                news_url=news.get("url", ""),
+                news_title=news.get("title", ""),
+                language=lang_cfg.get("code", "ko"),
+                title=os.path.basename(path),
+                youtube_url="",  # uploader에서 반환값 받으면 업데이트 필요
+            )
+        except Exception as e:
+            print(f"[{lang_name}] 실패: {e}")
+
+    # 뉴스 처리 완료 표시
+    if paths:
+        mark_news_posted(topic["id"], news.get("url", ""))
+
+    # 마지막 실행 시각 업데이트
+    update_last_run(topic["id"])
+
+    print(f"\n{'='*55}")
+    print(f"[web] 완료: {topic['name']} — {len(paths)}개 영상 생성")
+    for path, lang in paths:
+        print(f"  [{lang}] {os.path.basename(path)}")
+    print(f"{'='*55}\n")
+
+
 def main():
     if len(sys.argv) < 2:
         print(__doc__)
@@ -242,6 +368,11 @@ def main():
     # DB 초기화 (항상)
     from src.db import init_db
     init_db()
+
+    if cmd == "web":
+        topic_id = sys.argv[2] if len(sys.argv) > 2 else None
+        cmd_web(cfg, topic_id=topic_id)
+        return
 
     commands = {
         "once":     cmd_once,
