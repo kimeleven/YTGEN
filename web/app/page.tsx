@@ -21,11 +21,13 @@ async function getTopicsWithAccounts() {
     const acc = accountMap[t.id]
     const isConnected = acc && acc.token_json && acc.token_json !== "pending"
     const isPending = acc && acc.token_json === "pending"
+    const cfg = (t.config as Record<string, string>) || {}
     return {
       ...t,
       youtube_status: isConnected ? "connected" : isPending ? "pending" : "none",
       channel_name: acc?.channel_name || null,
       today_count: countMap[t.id] || 0,
+      content_mode: cfg.content_mode === "ai_prompt" ? "ai_prompt" : "news",
     }
   })
 }
@@ -34,6 +36,7 @@ type TopicWithStatus = Topic & {
   youtube_status: "connected" | "pending" | "none"
   channel_name: string | null
   today_count: number
+  content_mode: "news" | "ai_prompt"
 }
 
 export default async function Dashboard() {
@@ -84,6 +87,16 @@ function TopicCard({ topic }: { topic: TopicWithStatus }) {
       </div>
 
       <div className="text-sm space-y-1">
+        <div className="flex items-center gap-2">
+          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+            topic.content_mode === "ai_prompt"
+              ? "bg-purple-100 text-purple-700"
+              : "bg-blue-100 text-blue-700"
+          }`}>
+            {topic.content_mode === "ai_prompt" ? "✨ AI 생성" : "📰 뉴스 기반"}
+          </span>
+          <span className="text-xs text-gray-400">6시간마다 자동 실행</span>
+        </div>
         <div className={`flex items-center gap-1 ${ytStatus.color}`}>
           <span>{ytStatus.icon}</span>
           <span>YouTube {ytStatus.label}</span>
@@ -102,6 +115,9 @@ function TopicCard({ topic }: { topic: TopicWithStatus }) {
       <div className="flex gap-2 pt-1">
         <a href={`/topics/${topic.id}`} className="flex-1 text-center text-sm border rounded-md py-1.5 hover:bg-gray-50">
           상세 보기
+        </a>
+        <a href={`/topics/${topic.id}/edit`} className="text-center text-sm border rounded-md px-3 py-1.5 hover:bg-gray-50 text-gray-600">
+          편집
         </a>
         {topic.youtube_status !== "connected" && (
           <a

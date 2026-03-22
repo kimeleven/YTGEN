@@ -80,7 +80,12 @@ export default async function TopicDetailPage({
           <h1 className="text-2xl font-bold mt-1">{topic.name}</h1>
           {topic.description && <p className="text-gray-500 mt-1">{topic.description}</p>}
         </div>
-        <RunButton topicId={topic.id} />
+        <div className="flex gap-2 items-start">
+          <a href={`/topics/${topic.id}/edit`} className="text-sm border rounded-md px-3 py-1.5 hover:bg-gray-50">
+            편집
+          </a>
+          <RunButton topicId={topic.id} />
+        </div>
       </div>
 
       {/* YouTube 연결 상태 */}

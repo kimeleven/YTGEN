@@ -14,7 +14,7 @@ export async function GET(_: NextRequest, { params }: { params: { id: string } }
 
 export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
   const body = await req.json()
-  const { name, description, keywords, active } = body
+  const { name, description, keywords, active, config } = body
 
   try {
     const db = sql()
@@ -24,7 +24,8 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
         name        = COALESCE(${name ?? null}, name),
         description = COALESCE(${description ?? null}, description),
         keywords    = COALESCE(${keywords ?? null}, keywords),
-        active      = COALESCE(${active ?? null}, active)
+        active      = COALESCE(${active ?? null}, active),
+        config      = COALESCE(${config ? JSON.stringify(config) : null}::jsonb, config)
       WHERE id = ${params.id}
       RETURNING *
     `
