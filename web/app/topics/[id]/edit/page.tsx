@@ -55,7 +55,7 @@ export default function EditTopicPage({ params }: { params: { id: string } }) {
     })
 
     if (res.ok) {
-      router.push(`/topics/${params.id}`)
+      window.location.href = `/topics/${params.id}`
     } else {
       const data = await res.json()
       setError(data.error || "저장 실패")
@@ -66,7 +66,7 @@ export default function EditTopicPage({ params }: { params: { id: string } }) {
   async function handleDelete() {
     if (!confirm(`"${name}" 주제를 삭제할까요? 영상 이력도 모두 삭제됩니다.`)) return
     await fetch(`/api/topics/${params.id}`, { method: "DELETE" })
-    router.push("/")
+    window.location.href = "/"
   }
 
   if (fetching) return <div className="text-gray-400 py-20 text-center">불러오는 중...</div>

@@ -1,5 +1,8 @@
 import { sql, Topic, Video } from "@/lib/db"
 
+export const dynamic = "force-dynamic"
+export const revalidate = 0
+
 async function getTopicsWithAccounts() {
   const db = sql()
   const topics = await db`SELECT * FROM topics ORDER BY created_at` as Topic[]
