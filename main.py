@@ -27,7 +27,7 @@ def load_config(path: str = "config.yaml") -> dict:
         return yaml.safe_load(f)
 
 
-def run_single_video(cfg: dict, news_item: dict, lang_cfg: dict) -> str:
+def run_single_video(cfg: dict, news_item: dict, lang_cfg: dict, channel_hint: str = "") -> str:
     """
     뉴스 1개 + 언어 설정으로 영상을 생성하고 경로를 반환한다.
 
@@ -36,6 +36,7 @@ def run_single_video(cfg: dict, news_item: dict, lang_cfg: dict) -> str:
         news_item: 뉴스 데이터 dict
         lang_cfg: config.yaml의 languages 항목 1개
                   {"code": "ko", "name": "한국어", "tts_voice": ..., "font_path": ..., "watermark": ...}
+        channel_hint: 채널/주제 이름 (마지막 멘트에 반영)
     """
     from src.script_gen import generate_script_from_news
     from src.image_gen import generate_image
@@ -73,12 +74,14 @@ def run_single_video(cfg: dict, news_item: dict, lang_cfg: dict) -> str:
             topic=f"{news_item['title']}\n\n{news_item.get('summary', '')}",
             target_duration=target_dur,
             language=lang_code,
+            channel_hint=channel_hint,
         )
     else:
         script = generate_script_from_news(
             news_item,
             target_duration=target_dur,
             language=lang_code,
+            channel_hint=channel_hint,
         )
 
     # 2. 세그먼트별 이미지 + 음성
@@ -319,7 +322,7 @@ def cmd_web(cfg: dict, topic_id: str = None):
             "_yt_client_secret_json": yt_client_secret_json,
         }
         try:
-            path = run_single_video(topic_cfg, news, lang_cfg_with_token)
+            path = run_single_video(topic_cfg, news, lang_cfg_with_token, channel_hint=topic.get("name", ""))
             paths.append((path, lang_cfg.get("code", "ko")))
             print(f"[{lang_name}] 완료: {os.path.basename(path)}")
 

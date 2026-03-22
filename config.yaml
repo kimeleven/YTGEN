@@ -44,28 +44,28 @@ languages:
     name: 한국어
     tts_voice: "ko-KR-SunHiNeural"
     font_path: "C:/Windows/Fonts/malgunbd.ttf"
-    watermark: "AI뉴스 구독 & 알림설정"
+    watermark: ""
     youtube_regions: ["KR"]
     platforms: [youtube, instagram, facebook, threads]  # tiktok: 심사 대기 중
   - code: en
     name: English
     tts_voice: "en-US-JennyNeural"
     font_path: "C:/Windows/Fonts/malgunbd.ttf"
-    watermark: "Subscribe for AI News"
+    watermark: ""
     youtube_regions: ["US", "GB", "CA", "AU", "NZ", "IE"]
     platforms: [youtube]
   - code: ja
     name: 日本語
     tts_voice: "ja-JP-NanamiNeural"
     font_path: "C:/Windows/Fonts/msgothic.ttc"
-    watermark: "AIニュース チャンネル登録"
+    watermark: ""
     youtube_regions: ["JP"]
     platforms: [youtube]
   - code: zh
     name: 中文
     tts_voice: "zh-CN-XiaoxiaoNeural"
     font_path: "C:/Windows/Fonts/msyh.ttc"
-    watermark: "AI新闻 订阅频道"
+    watermark: ""
     youtube_regions: ["CN", "TW", "HK", "MO", "SG"]
     platforms: [youtube]
 

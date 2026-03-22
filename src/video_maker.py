@@ -236,12 +236,13 @@ def make_video(
             padding_bottom=subtitle_cfg.get("padding_bottom", 120),
         )
 
-        # 워터마크 베이크인
-        frame = _draw_watermark(
-            frame,
-            font_path=active_font,
-            text=watermark_text,
-        )
+        # 워터마크 베이크인 (텍스트가 있을 때만)
+        if watermark_text and watermark_text.strip():
+            frame = _draw_watermark(
+                frame,
+                font_path=active_font,
+                text=watermark_text,
+            )
 
         frame_arr = np.array(frame)
         video_clip = (
