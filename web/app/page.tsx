@@ -3,8 +3,12 @@ import { sql, Topic, Video } from "@/lib/db"
 async function getTopicsWithAccounts() {
   const db = sql()
   const topics = await db`SELECT * FROM topics ORDER BY created_at` as Topic[]
-  const accounts = await db`SELECT topic_id FROM youtube_accounts` as { topic_id: string }[]
-  const connectedIds = new Set(accounts.map((a) => a.topic_id))
+  const accounts = await db`SELECT topic_id, token_json, channel_name FROM youtube_accounts` as { topic_id: string; token_json: string; channel_name: string | null }[]
+
+  const accountMap: Record<string, { token_json: string; channel_name: string | null }> = {}
+  for (const a of accounts) {
+    accountMap[a.topic_id] = { token_json: a.token_json, channel_name: a.channel_name }
+  }
 
   const today = new Date().toISOString().slice(0, 10)
   const todayVideos = await db`SELECT topic_id FROM videos WHERE created_at >= ${today}` as Video[]
@@ -13,15 +17,27 @@ async function getTopicsWithAccounts() {
     countMap[v.topic_id] = (countMap[v.topic_id] || 0) + 1
   }
 
-  return topics.map((t) => ({
-    ...t,
-    youtube_connected: connectedIds.has(t.id),
-    today_count: countMap[t.id] || 0,
-  }))
+  return topics.map((t) => {
+    const acc = accountMap[t.id]
+    const isConnected = acc && acc.token_json && acc.token_json !== "pending"
+    const isPending = acc && acc.token_json === "pending"
+    return {
+      ...t,
+      youtube_status: isConnected ? "connected" : isPending ? "pending" : "none",
+      channel_name: acc?.channel_name || null,
+      today_count: countMap[t.id] || 0,
+    }
+  })
+}
+
+type TopicWithStatus = Topic & {
+  youtube_status: "connected" | "pending" | "none"
+  channel_name: string | null
+  today_count: number
 }
 
 export default async function Dashboard() {
-  const topics = await getTopicsWithAccounts()
+  const topics = await getTopicsWithAccounts() as TopicWithStatus[]
 
   return (
     <div>
@@ -44,10 +60,16 @@ export default async function Dashboard() {
   )
 }
 
-function TopicCard({ topic }: { topic: Topic & { youtube_connected: boolean; today_count: number } }) {
+function TopicCard({ topic }: { topic: TopicWithStatus }) {
   const lastRun = topic.last_run_at
     ? new Date(topic.last_run_at).toLocaleString("ko-KR")
     : "아직 실행 안 됨"
+
+  const ytStatus = {
+    connected: { icon: "✅", label: `연결됨${topic.channel_name ? ` — ${topic.channel_name}` : ""}`, color: "text-green-600" },
+    pending:   { icon: "⏳", label: "인증 미완료",  color: "text-yellow-600" },
+    none:      { icon: "❌", label: "미연결",        color: "text-red-500" },
+  }[topic.youtube_status]
 
   return (
     <div className="bg-white rounded-xl border p-5 space-y-3">
@@ -60,10 +82,14 @@ function TopicCard({ topic }: { topic: Topic & { youtube_connected: boolean; tod
           {topic.active ? "활성" : "비활성"}
         </span>
       </div>
-      <div className="text-sm text-gray-500 space-y-1">
-        <div>{topic.youtube_connected ? "✅" : "❌"} YouTube {topic.youtube_connected ? "연결됨" : "미연결"}</div>
-        <div>🕐 마지막 실행: {lastRun}</div>
-        <div>📹 오늘 생성: {topic.today_count}개</div>
+
+      <div className="text-sm space-y-1">
+        <div className={`flex items-center gap-1 ${ytStatus.color}`}>
+          <span>{ytStatus.icon}</span>
+          <span>YouTube {ytStatus.label}</span>
+        </div>
+        <div className="text-gray-500">🕐 마지막 실행: {lastRun}</div>
+        <div className="text-gray-500">📹 오늘 생성: {topic.today_count}개</div>
         {topic.keywords && topic.keywords.length > 0 && (
           <div className="flex flex-wrap gap-1 pt-1">
             {topic.keywords.map((kw) => (
@@ -72,13 +98,21 @@ function TopicCard({ topic }: { topic: Topic & { youtube_connected: boolean; tod
           </div>
         )}
       </div>
+
       <div className="flex gap-2 pt-1">
         <a href={`/topics/${topic.id}`} className="flex-1 text-center text-sm border rounded-md py-1.5 hover:bg-gray-50">
           상세 보기
         </a>
-        {!topic.youtube_connected && (
-          <a href={`/topics/${topic.id}/connect-youtube`} className="flex-1 text-center text-sm bg-red-50 text-red-600 border border-red-200 rounded-md py-1.5 hover:bg-red-100">
-            YouTube 연결
+        {topic.youtube_status !== "connected" && (
+          <a
+            href={`/topics/${topic.id}/connect-youtube`}
+            className={`flex-1 text-center text-sm rounded-md py-1.5 border ${
+              topic.youtube_status === "pending"
+                ? "bg-yellow-50 text-yellow-700 border-yellow-200 hover:bg-yellow-100"
+                : "bg-red-50 text-red-600 border-red-200 hover:bg-red-100"
+            }`}
+          >
+            {topic.youtube_status === "pending" ? "인증 완료하기" : "YouTube 연결"}
           </a>
         )}
         <form action={`/api/topics/${topic.id}/run`} method="POST">
