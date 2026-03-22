@@ -2,12 +2,12 @@
  * GitHub Actions workflow_dispatch 트리거
  */
 export async function triggerWorkflow(topicId?: string): Promise<{ ok: boolean; message: string }> {
-  const token = process.env.GITHUB_TOKEN
-  const owner = process.env.GITHUB_OWNER
-  const repo  = process.env.GITHUB_REPO || "YTGEN"
+  const token = process.env.GH_TOKEN
+  const owner = process.env.GH_OWNER
+  const repo  = process.env.GH_REPO || "YTGEN"
 
   if (!token || !owner) {
-    return { ok: false, message: "GITHUB_TOKEN 또는 GITHUB_OWNER 환경변수 없음" }
+    return { ok: false, message: "GH_TOKEN 또는 GH_OWNER 환경변수 없음" }
   }
 
   const res = await fetch(
