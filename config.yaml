@@ -73,11 +73,11 @@ languages:
 # 토큰/ID는 .env 파일에서 관리 (config에 하드코딩 금지)
 sns:
   instagram:
-    enabled: true    # META_ACCESS_TOKEN, INSTAGRAM_USER_ID 필요
+    enabled: false   # 권한 토큰 재발급 후 true로 변경
   facebook:
-    enabled: true    # META_ACCESS_TOKEN, FACEBOOK_PAGE_ID 필요
+    enabled: false   # 권한 토큰 재발급 후 true로 변경
   threads:
-    enabled: true    # META_ACCESS_TOKEN, THREADS_USER_ID 필요
+    enabled: false   # 권한 토큰 재발급 후 true로 변경
   tiktok:
     enabled: false   # 심사 대기 중 — 완료 후 true로 변경
 
