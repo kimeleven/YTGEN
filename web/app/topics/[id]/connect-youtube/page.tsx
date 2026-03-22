@@ -13,6 +13,7 @@ function ConnectYoutubeForm({ params }: { params: { id: string } }) {
     token_exchange: "Google 인증 코드 교환 실패. 다시 시도해 주세요.",
     no_secret: "저장된 client_secret이 없습니다. 다시 입력해 주세요.",
     parse_error: "client_secret 형식이 올바르지 않습니다.",
+    db_save: "토큰 저장 중 오류가 발생했습니다. 다시 시도해 주세요.",
   }
 
   const [clientSecretJson, setClientSecretJson] = useState("")

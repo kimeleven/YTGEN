@@ -54,13 +54,32 @@ export async function GET(req: NextRequest) {
 
   const tokenData = await tokenRes.json()
   const tokenJson = JSON.stringify(tokenData)
+  console.log("[youtube/callback] token keys:", Object.keys(tokenData))
 
   // DB에 token 저장
-  await db`
-    UPDATE youtube_accounts
-    SET token_json = ${tokenJson}, updated_at = now()
-    WHERE topic_id = ${topicId}
-  `
+  try {
+    const updated = await db`
+      UPDATE youtube_accounts
+      SET token_json = ${tokenJson}, updated_at = now()
+      WHERE topic_id = ${topicId}
+      RETURNING topic_id
+    `
+    console.log("[youtube/callback] DB updated rows:", updated.length)
+    if (updated.length === 0) {
+      // UPDATE가 아무 행도 갱신 못한 경우 — INSERT 시도
+      await db`
+        INSERT INTO youtube_accounts (topic_id, token_json, client_secret_json, updated_at)
+        VALUES (${topicId}, ${tokenJson}, ${"pending"}, now())
+        ON CONFLICT (topic_id) DO UPDATE
+          SET token_json = EXCLUDED.token_json,
+              updated_at = EXCLUDED.updated_at
+      `
+      console.log("[youtube/callback] fallback INSERT done")
+    }
+  } catch (e) {
+    console.error("[youtube/callback] DB save error:", e)
+    return NextResponse.redirect(new URL(`/topics/${topicId}/connect-youtube?error=db_save`, baseUrl))
+  }
 
   return NextResponse.redirect(new URL(`/topics/${topicId}?connected=1`, baseUrl))
 }
