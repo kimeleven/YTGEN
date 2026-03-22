@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       topic_id:
-        description: 'Supabase Topic ID (비우면 자동 선택)'
+        description: 'Topic ID (비우면 자동 선택)'
         required: false
         default: ''
 
@@ -37,12 +37,11 @@ jobs:
       - name: Install Python packages
         run: pip install -r requirements.txt
 
-      # ── 5. 영상 생성 + YouTube 업로드 (Supabase 주제 기반) ──
+      # ── 5. 영상 생성 + YouTube 업로드 (Neon 주제 기반) ──────
       - name: Generate and upload
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
           TOPIC_ID="${{ github.event.inputs.topic_id }}"
           if [ -n "$TOPIC_ID" ]; then

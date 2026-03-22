@@ -1,24 +1,46 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createServiceClient } from "@/lib/supabase"
+import { sql } from "@/lib/db"
 
 export async function GET(_: NextRequest, { params }: { params: { id: string } }) {
-  const sb = createServiceClient()
-  const { data, error } = await sb.from("topics").select("*").eq("id", params.id).single()
-  if (error) return NextResponse.json({ error: error.message }, { status: 404 })
-  return NextResponse.json(data)
+  try {
+    const db = sql()
+    const rows = await db`SELECT * FROM topics WHERE id = ${params.id}`
+    if (rows.length === 0) return NextResponse.json({ error: "Not found" }, { status: 404 })
+    return NextResponse.json(rows[0])
+  } catch (e: unknown) {
+    return NextResponse.json({ error: (e as Error).message }, { status: 500 })
+  }
 }
 
 export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
   const body = await req.json()
-  const sb = createServiceClient()
-  const { data, error } = await sb.from("topics").update(body).eq("id", params.id).select().single()
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json(data)
+  const { name, description, keywords, active } = body
+
+  try {
+    const db = sql()
+    const rows = await db`
+      UPDATE topics
+      SET
+        name        = COALESCE(${name ?? null}, name),
+        description = COALESCE(${description ?? null}, description),
+        keywords    = COALESCE(${keywords ?? null}, keywords),
+        active      = COALESCE(${active ?? null}, active)
+      WHERE id = ${params.id}
+      RETURNING *
+    `
+    if (rows.length === 0) return NextResponse.json({ error: "Not found" }, { status: 404 })
+    return NextResponse.json(rows[0])
+  } catch (e: unknown) {
+    return NextResponse.json({ error: (e as Error).message }, { status: 500 })
+  }
 }
 
 export async function DELETE(_: NextRequest, { params }: { params: { id: string } }) {
-  const sb = createServiceClient()
-  const { error } = await sb.from("topics").delete().eq("id", params.id)
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return new NextResponse(null, { status: 204 })
+  try {
+    const db = sql()
+    await db`DELETE FROM topics WHERE id = ${params.id}`
+    return new NextResponse(null, { status: 204 })
+  } catch (e: unknown) {
+    return NextResponse.json({ error: (e as Error).message }, { status: 500 })
+  }
 }

@@ -1,26 +1,19 @@
-import { createServiceClient, Topic } from "@/lib/supabase"
+import { sql, Topic, Video } from "@/lib/db"
 
-async function getTopicsWithAccounts(): Promise<(Topic & { youtube_connected: boolean; today_count: number })[]> {
-  const sb = createServiceClient()
-
-  const { data: topics } = await sb.from("topics").select("*").order("created_at")
-  if (!topics) return []
-
-  const { data: accounts } = await sb.from("youtube_accounts").select("topic_id")
-  const connectedIds = new Set((accounts || []).map((a: { topic_id: string }) => a.topic_id))
+async function getTopicsWithAccounts() {
+  const db = sql()
+  const topics = await db`SELECT * FROM topics ORDER BY created_at` as Topic[]
+  const accounts = await db`SELECT topic_id FROM youtube_accounts`
+  const connectedIds = new Set(accounts.map((a: { topic_id: string }) => a.topic_id))
 
   const today = new Date().toISOString().slice(0, 10)
-  const { data: todayVideos } = await sb
-    .from("videos")
-    .select("topic_id")
-    .gte("created_at", today)
-
+  const todayVideos = await db`SELECT topic_id FROM videos WHERE created_at >= ${today}` as Video[]
   const countMap: Record<string, number> = {}
-  for (const v of todayVideos || []) {
+  for (const v of todayVideos) {
     countMap[v.topic_id] = (countMap[v.topic_id] || 0) + 1
   }
 
-  return topics.map((t: Topic) => ({
+  return topics.map((t) => ({
     ...t,
     youtube_connected: connectedIds.has(t.id),
     today_count: countMap[t.id] || 0,
@@ -33,7 +26,6 @@ export default async function Dashboard() {
   return (
     <div>
       <h1 className="text-2xl font-bold mb-6">대시보드</h1>
-
       {topics.length === 0 ? (
         <div className="text-center py-20 text-gray-400">
           <p className="text-lg mb-4">등록된 주제가 없습니다.</p>
@@ -68,12 +60,8 @@ function TopicCard({ topic }: { topic: Topic & { youtube_connected: boolean; tod
           {topic.active ? "활성" : "비활성"}
         </span>
       </div>
-
       <div className="text-sm text-gray-500 space-y-1">
-        <div className="flex items-center gap-2">
-          <span>{topic.youtube_connected ? "✅" : "❌"}</span>
-          <span>YouTube {topic.youtube_connected ? "연결됨" : "미연결"}</span>
-        </div>
+        <div>{topic.youtube_connected ? "✅" : "❌"} YouTube {topic.youtube_connected ? "연결됨" : "미연결"}</div>
         <div>🕐 마지막 실행: {lastRun}</div>
         <div>📹 오늘 생성: {topic.today_count}개</div>
         {topic.keywords && topic.keywords.length > 0 && (
@@ -84,7 +72,6 @@ function TopicCard({ topic }: { topic: Topic & { youtube_connected: boolean; tod
           </div>
         )}
       </div>
-
       <div className="flex gap-2 pt-1">
         <a href={`/topics/${topic.id}`} className="flex-1 text-center text-sm border rounded-md py-1.5 hover:bg-gray-50">
           상세 보기
@@ -94,21 +81,12 @@ function TopicCard({ topic }: { topic: Topic & { youtube_connected: boolean; tod
             YouTube 연결
           </a>
         )}
-        <RunButton topicId={topic.id} />
+        <form action={`/api/topics/${topic.id}/run`} method="POST">
+          <button type="submit" className="text-sm bg-blue-600 text-white rounded-md px-3 py-1.5 hover:bg-blue-700">
+            ▶ 실행
+          </button>
+        </form>
       </div>
     </div>
-  )
-}
-
-function RunButton({ topicId }: { topicId: string }) {
-  return (
-    <form action={`/api/topics/${topicId}/run`} method="POST">
-      <button
-        type="submit"
-        className="text-sm bg-blue-600 text-white rounded-md px-3 py-1.5 hover:bg-blue-700"
-      >
-        ▶ 실행
-      </button>
-    </form>
   )
 }

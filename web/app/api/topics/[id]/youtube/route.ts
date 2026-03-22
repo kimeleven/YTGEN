@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createServiceClient } from "@/lib/supabase"
+import { sql } from "@/lib/db"
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   const body = await req.json()
@@ -9,7 +9,6 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     return NextResponse.json({ error: "token_json, client_secret_json 필수" }, { status: 400 })
   }
 
-  // JSON 유효성 검사
   try {
     JSON.parse(token_json)
     JSON.parse(client_secret_json)
@@ -17,18 +16,19 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     return NextResponse.json({ error: "유효한 JSON 형식이 아닙니다." }, { status: 400 })
   }
 
-  const sb = createServiceClient()
-  const { error } = await sb.from("youtube_accounts").upsert(
-    {
-      topic_id: params.id,
-      channel_name: channel_name || null,
-      token_json: token_json.trim(),
-      client_secret_json: client_secret_json.trim(),
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: "topic_id" }
-  )
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json({ ok: true })
+  try {
+    const db = sql()
+    await db`
+      INSERT INTO youtube_accounts (topic_id, channel_name, token_json, client_secret_json, updated_at)
+      VALUES (${params.id}, ${channel_name || null}, ${token_json.trim()}, ${client_secret_json.trim()}, now())
+      ON CONFLICT (topic_id) DO UPDATE
+        SET channel_name       = EXCLUDED.channel_name,
+            token_json         = EXCLUDED.token_json,
+            client_secret_json = EXCLUDED.client_secret_json,
+            updated_at         = EXCLUDED.updated_at
+    `
+    return NextResponse.json({ ok: true })
+  } catch (e: unknown) {
+    return NextResponse.json({ error: (e as Error).message }, { status: 500 })
+  }
 }

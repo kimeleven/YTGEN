@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createServiceClient } from "@/lib/supabase"
+import { sql } from "@/lib/db"
 
 export async function GET() {
-  const sb = createServiceClient()
-  const { data, error } = await sb.from("topics").select("*").order("created_at")
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json(data)
+  try {
+    const db = sql()
+    const topics = await db`SELECT * FROM topics ORDER BY created_at`
+    return NextResponse.json(topics)
+  } catch (e: unknown) {
+    return NextResponse.json({ error: (e as Error).message }, { status: 500 })
+  }
 }
 
 export async function POST(req: NextRequest) {
@@ -16,13 +19,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "name은 필수입니다." }, { status: 400 })
   }
 
-  const sb = createServiceClient()
-  const { data, error } = await sb
-    .from("topics")
-    .insert({ name: name.trim(), description: description?.trim() || null, keywords: keywords || [] })
-    .select()
-    .single()
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json(data, { status: 201 })
+  try {
+    const db = sql()
+    const rows = await db`
+      INSERT INTO topics (name, description, keywords)
+      VALUES (${name.trim()}, ${description?.trim() || null}, ${keywords || []})
+      RETURNING *
+    `
+    return NextResponse.json(rows[0], { status: 201 })
+  } catch (e: unknown) {
+    return NextResponse.json({ error: (e as Error).message }, { status: 500 })
+  }
 }

@@ -1,25 +1,22 @@
-import { createServiceClient, Topic, Video } from "@/lib/supabase"
+import { sql, Topic, Video } from "@/lib/db"
 import { notFound } from "next/navigation"
 
 async function getData(id: string) {
-  const sb = createServiceClient()
-  const { data: topic } = await sb.from("topics").select("*").eq("id", id).single()
-  if (!topic) return null
+  const db = sql()
+  const topicRows = await db`SELECT * FROM topics WHERE id = ${id}` as Topic[]
+  if (topicRows.length === 0) return null
+  const topic = topicRows[0]
 
-  const { data: videos } = await sb
-    .from("videos")
-    .select("*")
-    .eq("topic_id", id)
-    .order("created_at", { ascending: false })
-    .limit(30)
+  const videos = await db`
+    SELECT * FROM videos WHERE topic_id = ${id} ORDER BY created_at DESC LIMIT 30
+  ` as Video[]
 
-  const { data: account } = await sb
-    .from("youtube_accounts")
-    .select("channel_name, updated_at")
-    .eq("topic_id", id)
-    .single()
+  const accountRows = await db`
+    SELECT channel_name, updated_at FROM youtube_accounts WHERE topic_id = ${id}
+  `
+  const account = accountRows[0] || null
 
-  return { topic: topic as Topic, videos: (videos || []) as Video[], account }
+  return { topic, videos, account }
 }
 
 export default async function TopicDetailPage({ params }: { params: { id: string } }) {
