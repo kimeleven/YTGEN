@@ -13,7 +13,7 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   const body = await req.json()
-  const { name, description, keywords } = body
+  const { name, description, keywords, config } = body
 
   if (!name?.trim()) {
     return NextResponse.json({ error: "name은 필수입니다." }, { status: 400 })
@@ -22,8 +22,8 @@ export async function POST(req: NextRequest) {
   try {
     const db = sql()
     const rows = await db`
-      INSERT INTO topics (name, description, keywords)
-      VALUES (${name.trim()}, ${description?.trim() || null}, ${keywords || []})
+      INSERT INTO topics (name, description, keywords, config)
+      VALUES (${name.trim()}, ${description?.trim() || null}, ${keywords || []}, ${JSON.stringify(config || {})})
       RETURNING *
     `
     return NextResponse.json(rows[0], { status: 201 })

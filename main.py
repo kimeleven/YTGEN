@@ -67,11 +67,19 @@ def run_single_video(cfg: dict, news_item: dict, lang_cfg: dict) -> str:
     print(f"\n[{lang_name}] 대본 생성 중...")
 
     # 1. 대본 생성 (해당 언어로)
-    script = generate_script_from_news(
-        news_item,
-        target_duration=target_dur,
-        language=lang_code,
-    )
+    if news_item.get("_is_ai"):
+        from src.script_gen import generate_script
+        script = generate_script(
+            topic=f"{news_item['title']}\n\n{news_item.get('summary', '')}",
+            target_duration=target_dur,
+            language=lang_code,
+        )
+    else:
+        script = generate_script_from_news(
+            news_item,
+            target_duration=target_dur,
+            language=lang_code,
+        )
 
     # 2. 세그먼트별 이미지 + 음성
     segments = []
@@ -261,21 +269,41 @@ def cmd_web(cfg: dict, topic_id: str = None):
         yt_token_json, yt_client_secret_json = yt_tokens
         print(f"[web] YouTube 토큰 로드 완료")
 
-    # 이 주제에서 이미 처리된 뉴스 URL 집합
+    # 이 주제에서 이미 처리된 URL/제목 집합
     posted_urls = get_posted_urls(topic["id"])
 
-    # 뉴스 가져오기 (주제 키워드 적용)
-    news_list = fetch_news(
-        max_count=1,
-        skip_processed=True,
-        exclude_urls=posted_urls,
-        keywords=keywords or None,
-    )
-    if not news_list:
-        print(f"[web] [{topic['name']}] 새로운 뉴스 없음.")
-        return
+    # 콘텐츠 모드 분기
+    content_mode = topic.get("config", {}).get("content_mode", "news")
 
-    news = news_list[0]
+    if content_mode == "ai_prompt":
+        from src.content_generator import pick_ai_topic
+        ai_prompt = topic.get("config", {}).get("ai_prompt", "")
+        if not ai_prompt:
+            print(f"[web] [{topic['name']}] ai_prompt가 설정되지 않았습니다.")
+            return
+        topic_idea = pick_ai_topic(ai_prompt, exclude_titles=posted_urls)
+        if not topic_idea:
+            print(f"[web] [{topic['name']}] 새로운 AI 주제 없음.")
+            return
+        news = {
+            "source": "AI생성",
+            "title": topic_idea["title"],
+            "summary": topic_idea.get("summary", ""),
+            "url": f"ai://{topic_idea['title']}",
+            "_is_ai": True,
+        }
+    else:
+        # 뉴스 가져오기 (주제 키워드 적용)
+        news_list = fetch_news(
+            max_count=1,
+            skip_processed=True,
+            exclude_urls=posted_urls,
+            keywords=keywords or None,
+        )
+        if not news_list:
+            print(f"[web] [{topic['name']}] 새로운 뉴스 없음.")
+            return
+        news = news_list[0]
 
     # 언어별 영상 생성 (YouTube 토큰을 lang_cfg에 임시 주입)
     paths = []
