@@ -56,24 +56,48 @@ def _parse_feed(source_name: str, rss_url: str) -> list[dict]:
         return []
 
 
-def fetch_news(max_count: int = 1, skip_processed: bool = True) -> list[dict]:
+def _build_rss_sources(keywords: list[str] = None) -> list[tuple[str, str]]:
+    """키워드 목록으로 RSS 소스를 생성한다. 없으면 기본 AI 뉴스 소스 반환."""
+    if not keywords:
+        return _RSS_SOURCES
+    sources = []
+    for kw in keywords:
+        import urllib.parse
+        encoded = urllib.parse.quote(kw)
+        sources.append((kw, f"https://news.google.com/rss/search?q={encoded}&hl=ko&gl=KR&ceid=KR:ko"))
+    return sources
+
+
+def fetch_news(
+    max_count: int = 1,
+    skip_processed: bool = True,
+    exclude_urls: set = None,
+    keywords: list[str] = None,
+) -> list[dict]:
     """
-    AI 관련 최신 뉴스를 수집해 반환한다.
+    최신 뉴스를 수집해 반환한다.
 
     Args:
         max_count: 최대 반환 뉴스 수
-        skip_processed: DB에 기록된 뉴스 제외 여부
+        skip_processed: SQLite DB에 기록된 뉴스 제외 (once/schedule 모드용)
+        exclude_urls: 제외할 URL 집합 (web 모드에서 Supabase posted_news 전달)
+        keywords: 검색 키워드 목록 (None이면 기본 AI 뉴스 RSS 사용)
 
     Returns:
         [{"source", "title", "summary", "url", "published"}, ...]
     """
-    from src.db import get_posted_urls
-    posted = get_posted_urls() if skip_processed else set()
+    posted = set()
+    if skip_processed:
+        from src.db import get_posted_urls
+        posted = get_posted_urls()
+    if exclude_urls:
+        posted = posted | exclude_urls
 
     all_news = []
     seen_titles = set()
+    sources = _build_rss_sources(keywords)
 
-    for source_name, rss_url in _RSS_SOURCES:
+    for source_name, rss_url in sources:
         items = _parse_feed(source_name, rss_url)
         for item in items:
             if not item["title"] or not item["url"]:
@@ -90,5 +114,5 @@ def fetch_news(max_count: int = 1, skip_processed: bool = True) -> list[dict]:
             break
 
     result = all_news[:max_count]
-    print(f"[news_fetcher] {len(result)}개 뉴스 수집 (DB 기등록: {len(posted)}개 제외)")
+    print(f"[news_fetcher] {len(result)}개 뉴스 수집 (기등록 {len(posted)}개 제외)")
     return result
