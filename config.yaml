@@ -46,7 +46,7 @@ languages:
     font_path: "C:/Windows/Fonts/malgunbd.ttf"
     watermark: "AI뉴스 구독 & 알림설정"
     youtube_regions: ["KR"]
-    platforms: [youtube, instagram, facebook, threads, tiktok]
+    platforms: [youtube, instagram, facebook, threads]  # tiktok: 심사 대기 중
   - code: en
     name: English
     tts_voice: "en-US-JennyNeural"
@@ -79,7 +79,7 @@ sns:
   threads:
     enabled: true    # META_ACCESS_TOKEN, THREADS_USER_ID 필요
   tiktok:
-    enabled: true    # TIKTOK_CLIENT_KEY, TIKTOK_CLIENT_SECRET, TIKTOK_ACCESS_TOKEN, TIKTOK_REFRESH_TOKEN 필요
+    enabled: false   # 심사 대기 중 — 완료 후 true로 변경
 
 # ── 저장 경로 ────────────────────────────
 output_dir: "output"
