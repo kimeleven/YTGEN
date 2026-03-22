@@ -53,8 +53,21 @@ export async function GET(req: NextRequest) {
   }
 
   const tokenData = await tokenRes.json()
-  const tokenJson = JSON.stringify(tokenData)
   console.log("[youtube/callback] token keys:", Object.keys(tokenData))
+
+  // google-auth-library가 요구하는 형식으로 변환
+  // Credentials.from_authorized_user_file()은 client_id, client_secret 필요
+  const tokenJson = JSON.stringify({
+    token: tokenData.access_token,
+    refresh_token: tokenData.refresh_token,
+    token_uri: "https://oauth2.googleapis.com/token",
+    client_id: creds.client_id,
+    client_secret: creds.client_secret,
+    scopes: ["https://www.googleapis.com/auth/youtube.upload"],
+    expiry: tokenData.expires_in
+      ? new Date(Date.now() + tokenData.expires_in * 1000).toISOString()
+      : null,
+  })
 
   // DB에 token 저장
   try {
