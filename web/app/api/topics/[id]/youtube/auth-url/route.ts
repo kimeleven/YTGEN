@@ -33,10 +33,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
           updated_at         = EXCLUDED.updated_at
   `
 
-  const origin = req.headers.get("origin") || req.headers.get("x-forwarded-proto")
-    ? `${req.headers.get("x-forwarded-proto") || "https"}://${req.headers.get("x-forwarded-host") || req.headers.get("host")}`
-    : process.env.NEXTAUTH_URL || "http://localhost:3000"
-  const redirectUri = `${origin}/api/auth/youtube/callback`
+  const redirectUri = `${new URL(req.url).origin}/api/auth/youtube/callback`
   console.log("[youtube/auth-url] redirectUri:", redirectUri)
 
   const oauthUrl = new URL("https://accounts.google.com/o/oauth2/v2/auth")
