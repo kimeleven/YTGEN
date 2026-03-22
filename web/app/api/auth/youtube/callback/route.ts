@@ -7,7 +7,9 @@ export async function GET(req: NextRequest) {
   const topicId = searchParams.get("state")
   const error = searchParams.get("error")
 
-  const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000"
+  const proto = req.headers.get("x-forwarded-proto") || "https"
+  const host = req.headers.get("x-forwarded-host") || req.headers.get("host") || ""
+  const baseUrl = process.env.NEXTAUTH_URL || (host ? `${proto}://${host}` : "http://localhost:3000")
 
   if (error || !code || !topicId) {
     return NextResponse.redirect(new URL(`/?auth_error=${error || "missing_code"}`, baseUrl))
@@ -31,6 +33,7 @@ export async function GET(req: NextRequest) {
   }
 
   const redirectUri = `${baseUrl}/api/auth/youtube/callback`
+  console.log("[youtube/callback] redirectUri:", redirectUri)
 
   // 인증 코드 → 토큰 교환
   const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
