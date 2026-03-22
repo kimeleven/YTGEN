@@ -270,9 +270,14 @@ def make_video(
                 volume=1.0,   # volumex로 따로 조절
             )
 
+        _bgm_raw = AudioFileClip(bgm_path)
+        # BGM이 영상보다 짧으면 루프, 그 후 영상 길이에 맞춰 자르기
+        if _bgm_raw.duration < final.duration:
+            from moviepy.audio.fx.audio_loop import audio_loop
+            _bgm_raw = audio_loop(_bgm_raw, duration=final.duration)
         bgm_clip = (
-            AudioFileClip(bgm_path)
-            .set_duration(final.duration)
+            _bgm_raw
+            .subclip(0, final.duration)
             .volumex(bgm_volume)
         )
         mixed_audio = CompositeAudioClip([final.audio, bgm_clip])
