@@ -3,8 +3,8 @@ import { sql, Topic, Video } from "@/lib/db"
 async function getTopicsWithAccounts() {
   const db = sql()
   const topics = await db`SELECT * FROM topics ORDER BY created_at` as Topic[]
-  const accounts = await db`SELECT topic_id FROM youtube_accounts`
-  const connectedIds = new Set(accounts.map((a: { topic_id: string }) => a.topic_id))
+  const accounts = await db`SELECT topic_id FROM youtube_accounts` as { topic_id: string }[]
+  const connectedIds = new Set(accounts.map((a) => a.topic_id))
 
   const today = new Date().toISOString().slice(0, 10)
   const todayVideos = await db`SELECT topic_id FROM videos WHERE created_at >= ${today}` as Video[]
