@@ -4,8 +4,8 @@
 
 # ── 스케줄 설정 ──────────────────────────
 schedule:
-  interval_hours: 6      # 몇 시간 간격으로 1개 생성 (6 = 6시간마다 1개)
-  daily_limit: 4         # 하루 최대 생성 개수
+  interval_hours: 3      # 몇 시간 간격으로 1개 생성 (3 = 3시간마다 1개)
+  daily_limit: 8         # 하루 최대 생성 개수
   start_time: "09:00"    # 첫 실행 시각 (HH:MM)
 
 # ── 영상 설정 ────────────────────────────
@@ -47,27 +47,27 @@ languages:
     watermark: ""
     youtube_regions: ["KR"]
     platforms: [youtube, instagram, facebook, threads]  # tiktok: 심사 대기 중
-  - code: en
-    name: English
-    tts_voice: "en-US-JennyNeural"
-    font_path: "C:/Windows/Fonts/malgunbd.ttf"
-    watermark: ""
-    youtube_regions: ["US", "GB", "CA", "AU", "NZ", "IE"]
-    platforms: [youtube]
-  - code: ja
-    name: 日本語
-    tts_voice: "ja-JP-NanamiNeural"
-    font_path: "C:/Windows/Fonts/msgothic.ttc"
-    watermark: ""
-    youtube_regions: ["JP"]
-    platforms: [youtube]
-  - code: zh
-    name: 中文
-    tts_voice: "zh-CN-XiaoxiaoNeural"
-    font_path: "C:/Windows/Fonts/msyh.ttc"
-    watermark: ""
-    youtube_regions: ["CN", "TW", "HK", "MO", "SG"]
-    platforms: [youtube]
+  # - code: en
+  #   name: English
+  #   tts_voice: "en-US-JennyNeural"
+  #   font_path: "C:/Windows/Fonts/malgunbd.ttf"
+  #   watermark: ""
+  #   youtube_regions: ["US", "GB", "CA", "AU", "NZ", "IE"]
+  #   platforms: [youtube]
+  # - code: ja
+  #   name: 日本語
+  #   tts_voice: "ja-JP-NanamiNeural"
+  #   font_path: "C:/Windows/Fonts/msgothic.ttc"
+  #   watermark: ""
+  #   youtube_regions: ["JP"]
+  #   platforms: [youtube]
+  # - code: zh
+  #   name: 中文
+  #   tts_voice: "zh-CN-XiaoxiaoNeural"
+  #   font_path: "C:/Windows/Fonts/msyh.ttc"
+  #   watermark: ""
+  #   youtube_regions: ["CN", "TW", "HK", "MO", "SG"]
+  #   platforms: [youtube]
 
 # ── SNS 업로드 설정 ───────────────────────
 # 토큰/ID는 .env 파일에서 관리 (config에 하드코딩 금지)
