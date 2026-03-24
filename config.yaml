@@ -47,13 +47,13 @@ languages:
     watermark: ""
     youtube_regions: ["KR"]
     platforms: [youtube, instagram, facebook, threads]  # tiktok: 심사 대기 중
-  # - code: en
-  #   name: English
-  #   tts_voice: "en-US-JennyNeural"
-  #   font_path: "C:/Windows/Fonts/malgunbd.ttf"
-  #   watermark: ""
-  #   youtube_regions: ["US", "GB", "CA", "AU", "NZ", "IE"]
-  #   platforms: [youtube]
+  - code: en
+    name: English
+    tts_voice: "en-US-JennyNeural"
+    font_path: "C:/Windows/Fonts/malgunbd.ttf"
+    watermark: ""
+    youtube_regions: ["US", "GB", "CA", "AU", "NZ", "IE"]
+    platforms: [youtube]
   # - code: ja
   #   name: 日本語
   #   tts_voice: "ja-JP-NanamiNeural"
